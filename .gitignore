@@ -1,0 +1,6 @@
+.idea
+target
+.lsp
+.clj-kondo
+.my-py
+node_modules
