@@ -15,7 +15,7 @@ function LoadingFallback() {
 
 export function RouterProvider() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ErrorBoundary>
         <Box>
           <NavigationHeader />
