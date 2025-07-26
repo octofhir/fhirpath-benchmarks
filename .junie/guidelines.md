@@ -23,7 +23,7 @@ For debugging cases create a simple test inside the test directory and delete it
 
 
 ## Task executing phase
-Update task file for aligh with implemented features
+Update micro task file frequently for align with current implementation status
 
 
 ## Test Coverage
@@ -37,7 +37,7 @@ Run the automated test coverage generator:
 ```
 
 This script:
-- Builds the test infrastructure 
+- Builds the test infrastructure
 - Runs all official FHIRPath test suites
 - Generates a comprehensive report in `fhirpath-core/TEST_COVERAGE.md`
 - Provides statistics on pass rates and identifies missing functionality

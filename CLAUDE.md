@@ -23,7 +23,7 @@ For debugging cases create a simple test inside the test directory and delete it
 
 
 ## Task executing phase
-Update task file for aligh with implemented features
+Update micro task file frequently for align with current implementation status
 
 
 ## Test Coverage

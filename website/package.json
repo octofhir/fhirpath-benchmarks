@@ -1,0 +1,36 @@
+{
+  "name": "website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "@mantine/charts": "^8.2.1",
+    "@mantine/core": "^8.2.1",
+    "@mantine/dates": "^8.2.1",
+    "@mantine/hooks": "^8.2.1",
+    "@mantine/notifications": "^8.2.1",
+    "dayjs": "^1.11.13",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.7.1",
+    "recharts": "^2.15.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.1.2",
+    "@types/node": "22.16.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "globals": "^16.3.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}

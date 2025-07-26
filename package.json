@@ -1,0 +1,22 @@
+{
+  "name": "benchmarks",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "lefthook install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/octofhir/benchmarks.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/octofhir/benchmarks/issues"
+  },
+  "homepage": "https://github.com/octofhir/benchmarks#readme",
+  "description": "",
+  "devDependencies": {
+    "lefthook": "^1.12.2"
+  }
+}
