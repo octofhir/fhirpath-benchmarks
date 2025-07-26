@@ -32,10 +32,10 @@ impl PythonRunner {
 
     async fn setup_virtual_env(&self, impl_dir: &PathBuf) -> Result<()> {
         let venv_path = impl_dir.join("venv");
-        
+
         if !venv_path.exists() {
             println!("Creating virtual environment at {}", venv_path.display());
-            
+
             let output = self.base.execute_command(
                 &["python".to_string(), "-m".to_string(), "venv".to_string(), "venv".to_string()],
                 impl_dir,
@@ -60,13 +60,13 @@ impl ImplementationRunner for PythonRunner {
 
     async fn setup(&self, config: &ImplementationConfig, impl_dir: &PathBuf) -> Result<()> {
         println!("🔧 Setting up {} implementation...", self.name());
-        
+
         // Setup virtual environment if needed
         self.setup_virtual_env(impl_dir).await?;
-        
+
         // Get the appropriate Python executable
         let python_exe = self.get_python_executable(impl_dir)?;
-        
+
         // Create modified setup command with correct Python executable
         let mut setup_command = config.setup_command.clone();
         if !setup_command.is_empty() && setup_command[0] == "python" {
@@ -96,7 +96,7 @@ impl ImplementationRunner for PythonRunner {
 
         // Get the appropriate Python executable
         let python_exe = self.get_python_executable(impl_dir)?;
-        
+
         // Create modified test command with correct Python executable
         let mut test_command = config.test_command.clone();
         if !test_command.is_empty() && test_command[0] == "python" {
@@ -115,7 +115,7 @@ impl ImplementationRunner for PythonRunner {
         }
 
         // Try to load results from the generated file
-        let pattern = "python_test_results*.json";
+        let pattern = "python_test_results.json";
         if let Some(result) = self.base.load_result_from_file::<TestResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -133,7 +133,7 @@ impl ImplementationRunner for PythonRunner {
 
         // Get the appropriate Python executable
         let python_exe = self.get_python_executable(impl_dir)?;
-        
+
         // Create modified benchmark command with correct Python executable
         let mut benchmark_command = config.benchmark_command.clone();
         if !benchmark_command.is_empty() && benchmark_command[0] == "python" {
@@ -152,7 +152,7 @@ impl ImplementationRunner for PythonRunner {
         }
 
         // Try to load results from the generated file
-        let pattern = "python_benchmark_results*.json";
+        let pattern = "python_benchmark_results.json";
         if let Some(result) = self.base.load_result_from_file::<BenchmarkResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -165,7 +165,7 @@ impl ImplementationRunner for PythonRunner {
 impl PythonRunner {
     fn parse_test_output(&self, output: &str) -> Result<TestResult> {
         let mut result = TestResult::new("python".to_string(), crate::utils::get_system_info());
-        
+
         // Basic parsing - look for common test output patterns
         let lines: Vec<&str> = output.lines().collect();
         let mut passed_count = 0;

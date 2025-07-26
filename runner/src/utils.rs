@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-use sysinfo::{System, Pid};
+use sysinfo::{System, Pid, ProcessesToUpdate};
 
 pub fn get_timestamp() -> u64 {
     SystemTime::now()
@@ -18,27 +18,40 @@ pub fn get_timestamp_ms() -> u128 {
 }
 
 pub fn cleanup_result_files(results_dir: &PathBuf, language: &str, result_type: &str) -> Result<()> {
-    let pattern = format!("{}_{}_*.json", language, result_type);
-    let pattern_path = results_dir.join(pattern);
-    
-    if let Ok(entries) = glob::glob(&pattern_path.to_string_lossy()) {
+    // Clean up both timestamped files (legacy) and non-timestamped files (current)
+    let timestamped_pattern = format!("{}_{}_*.json", language, result_type);
+    let timestamped_pattern_path = results_dir.join(timestamped_pattern);
+
+    let simple_filename = format!("{}_{}.json", language, result_type);
+    let simple_file_path = results_dir.join(&simple_filename);
+
+    // Remove timestamped files (legacy)
+    if let Ok(entries) = glob::glob(&timestamped_pattern_path.to_string_lossy()) {
         for entry in entries {
             if let Ok(path) = entry {
                 match std::fs::remove_file(&path) {
-                    Ok(_) => println!("🗑️  Removed old result file: {}", path.display()),
+                    Ok(_) => println!("🗑️  Removed old timestamped result file: {}", path.display()),
                     Err(e) => println!("⚠️  Could not remove {}: {}", path.display(), e),
                 }
             }
         }
     }
-    
+
+    // Remove simple non-timestamped file if it exists
+    if simple_file_path.exists() {
+        match std::fs::remove_file(&simple_file_path) {
+            Ok(_) => println!("🗑️  Removed existing result file: {}", simple_file_path.display()),
+            Err(e) => println!("⚠️  Could not remove {}: {}", simple_file_path.display(), e),
+        }
+    }
+
     Ok(())
 }
 
 pub fn get_system_info() -> SystemInfo {
     let mut system = System::new_all();
     system.refresh_all();
-    
+
     SystemInfo {
         os: System::name().unwrap_or_else(|| "Unknown".to_string()),
         arch: System::kernel_version().unwrap_or_else(|| "Unknown".to_string()),
@@ -51,8 +64,8 @@ pub fn get_system_info() -> SystemInfo {
 pub fn get_process_stats(pid: u32) -> Option<ProcessStats> {
     let mut system = System::new();
     let pid = Pid::from(pid as usize);
-    system.refresh_process(pid);
-    
+    system.refresh_processes(ProcessesToUpdate::Some(&[pid.into()]), true);
+
     if let Some(process) = system.process(pid) {
         Some(ProcessStats {
             cpu_usage: process.cpu_usage(),
@@ -82,7 +95,7 @@ pub struct ProcessStats {
 
 pub fn find_virtual_env_python(impl_dir: &PathBuf) -> Option<PathBuf> {
     let venv_dirs = ["venv", ".venv", "env", ".env"];
-    
+
     for venv_dir in &venv_dirs {
         let venv_path = impl_dir.join(venv_dir);
         if venv_path.exists() {
@@ -91,12 +104,12 @@ pub fn find_virtual_env_python(impl_dir: &PathBuf) -> Option<PathBuf> {
             } else {
                 venv_path.join("bin").join("python")
             };
-            
+
             if python_path.exists() {
                 return Some(python_path);
             }
         }
     }
-    
+
     None
 }

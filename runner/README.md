@@ -86,11 +86,11 @@ The runner uses a default configuration but can be customized via:
 
 ## Output Format
 
-Results are saved in the `results/` directory with timestamps:
+Results are saved in the `results/` directory with static names:
 
-- `{language}_test_results_{timestamp}.json`: Test execution results
-- `{language}_benchmark_results_{timestamp}.json`: Benchmark results
-- `comparison_report_{timestamp}.json`: Combined comparison report
+- `{language}_test_results.json`: Test execution results
+- `{language}_benchmark_results.json`: Benchmark results
+- `comparison_report.json`: Combined comparison report
 
 ### Enhanced Result Format
 

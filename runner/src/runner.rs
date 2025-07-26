@@ -186,6 +186,84 @@ impl Runner {
         Ok(benchmark_results)
     }
 
+    pub async fn run_benchmarks_enhanced(&self, 
+                                       languages: &[String], 
+                                       iterations: usize, 
+                                       warmup: usize, 
+                                       detailed_metrics: bool, 
+                                       categories: Option<Vec<String>>) -> Result<Vec<BenchmarkResult>> {
+        let mut benchmark_results = Vec::new();
+        
+        println!("⚡ Running enhanced benchmarks for {} implementations...", languages.len());
+        println!("🔄 Configuration: {} iterations, {} warmup runs", iterations, warmup);
+        
+        for language in languages {
+            let result = self.run_benchmarks_for_language_enhanced(
+                language, iterations, warmup, detailed_metrics, categories.clone()
+            ).await?;
+            benchmark_results.push(result);
+        }
+        
+        Ok(benchmark_results)
+    }
+
+    pub async fn run_parallel_benchmarks_enhanced(&self, 
+                                                languages: &[String], 
+                                                iterations: usize, 
+                                                warmup: usize, 
+                                                detailed_metrics: bool, 
+                                                categories: Option<Vec<String>>) -> Result<Vec<BenchmarkResult>> {
+        println!("⚡ Running enhanced benchmarks in parallel for {} implementations...", languages.len());
+        println!("🔄 Configuration: {} iterations, {} warmup runs", iterations, warmup);
+        
+        let benchmark_futures: Vec<_> = languages.iter().map(|lang| {
+            let categories_clone = categories.clone();
+            async move {
+                self.run_benchmarks_for_language_enhanced(
+                    lang, iterations, warmup, detailed_metrics, categories_clone
+                ).await
+            }
+        }).collect();
+        
+        let results = join_all(benchmark_futures).await;
+        
+        let mut benchmark_results = Vec::new();
+        for result in results {
+            match result {
+                Ok(benchmark_result) => benchmark_results.push(benchmark_result),
+                Err(e) => println!("❌ Benchmark execution error: {}", e),
+            }
+        }
+        
+        Ok(benchmark_results)
+    }
+
+    pub async fn run_benchmarks_for_language_enhanced(&self, 
+                                                    language: &str, 
+                                                    iterations: usize, 
+                                                    warmup: usize, 
+                                                    detailed_metrics: bool, 
+                                                    categories: Option<Vec<String>>) -> Result<BenchmarkResult> {
+        let impl_config = self.config.implementations.get(language)
+            .ok_or_else(|| anyhow::anyhow!("Unknown implementation: {}", language))?;
+        
+        let impl_dir = self.config.implementations_dir.join(language);
+        let runner = create_runner(language);
+        
+        // Load and prepare test cases
+        let mut test_loader = TestCaseLoader::new(self.config.specs_dir.clone());
+        test_loader.load_all_test_suites()?;
+        
+        let filter = TestCaseFilter::default();
+        let test_cases = test_loader.filter_test_cases(&filter);
+        
+        println!("📋 Loaded {} test cases for {} enhanced benchmarking", test_cases.len(), language);
+        
+        // For now, delegate to the standard benchmark runner
+        // Enhanced features will be implemented in the trait implementation
+        runner.run_benchmarks(impl_config, &impl_dir, &self.config.results_dir).await
+    }
+
     pub fn generate_report(&self, test_results: Vec<TestResult>, benchmark_results: Vec<BenchmarkResult>) -> Result<PathBuf> {
         let report = ComparisonReport::new(test_results, benchmark_results);
         
@@ -261,5 +339,43 @@ impl Runner {
         println!("🔍 Available implementations: {}", available_impls.join(", "));
         
         Ok(())
+    }
+
+    pub async fn load_latest_test_result(&self, language: &str) -> Result<Option<TestResult>> {
+        let pattern = format!("{}_test_results_*.json", language);
+        let pattern_path = self.config.results_dir.join(format!("*{}*", pattern));
+        
+        if let Ok(entries) = glob::glob(&pattern_path.to_string_lossy()) {
+            for entry in entries {
+                if let Ok(path) = entry {
+                    if let Ok(content) = tokio::fs::read_to_string(&path).await {
+                        if let Ok(result) = serde_json::from_str::<TestResult>(&content) {
+                            return Ok(Some(result));
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(None)
+    }
+
+    pub async fn load_latest_benchmark_result(&self, language: &str) -> Result<Option<BenchmarkResult>> {
+        let pattern = format!("{}_benchmark_results_*.json", language);
+        let pattern_path = self.config.results_dir.join(format!("*{}*", pattern));
+        
+        if let Ok(entries) = glob::glob(&pattern_path.to_string_lossy()) {
+            for entry in entries {
+                if let Ok(path) = entry {
+                    if let Ok(content) = tokio::fs::read_to_string(&path).await {
+                        if let Ok(result) = serde_json::from_str::<BenchmarkResult>(&content) {
+                            return Ok(Some(result));
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(None)
     }
 }

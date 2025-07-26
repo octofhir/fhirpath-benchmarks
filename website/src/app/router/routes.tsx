@@ -1,15 +1,16 @@
 import { lazy } from 'react'
 import type { RouteObject } from 'react-router-dom'
 
-const LandingPage = lazy(() => import('@pages/landing'))
 const DashboardPage = lazy(() => import('@pages/dashboard'))
 const BenchmarkDetailPage = lazy(() => import('@pages/benchmark-detail'))
 const TestExplorerPage = lazy(() => import('@pages/test-explorer'))
+const ImplementationsPage = lazy(() => import('@pages/implementations'))
+const NotFoundPage = lazy(() => import('@pages/not-found'))
 
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <LandingPage />,
+    element: <DashboardPage />,
   },
   {
     path: '/dashboard',
@@ -22,5 +23,13 @@ export const routes: RouteObject[] = [
   {
     path: '/tests',
     element: <TestExplorerPage />,
+  },
+  {
+    path: '/implementations',
+    element: <ImplementationsPage />,
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
   },
 ]

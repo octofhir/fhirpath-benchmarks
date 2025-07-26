@@ -83,15 +83,21 @@ website/
 - **Detailed Benchmark Pages**: Individual pages for each implementation with comprehensive metrics
 - **Test Case Explorer**: Browse and filter test cases with results per implementation
 
-#### 4. Data Flow
+#### 4. Data Flow & Deployment
 ```
-Test Cases (JSON) → Rust Runner → Enhanced Results (JSON) → Website (React)
+Test Cases (JSON) → Rust Runner → Static Results (JSON) → GitHub Pages (React SPA)
 ```
+
+**Static Deployment Architecture:**
+- Website will be deployed as a static Single Page Application (SPA) to GitHub Pages
+- All benchmark data will be pre-generated as static JSON files in `/public/test-results/latest/`
+- No server-side components, websockets, or real-time data fetching required
+- Data updates occur through CI/CD pipeline that regenerates static files and redeploys the site
 
 #### 5. Key Features
 - **Responsive Design**: Mobile-first approach using Linear Design System
 - **Interactive Filtering**: Filter by implementation, test category, performance metrics
-- **Real-time Updates**: Automatic refresh when new benchmark results are available
+- **Static Data Consumption**: Load benchmark results from pre-generated static JSON files
 - **Export Capabilities**: Download results as CSV/JSON for further analysis
 - **Historical Tracking**: Compare results across different benchmark runs
 
@@ -149,7 +155,8 @@ Test Cases (JSON) → Rust Runner → Enhanced Results (JSON) → Website (React
 - Website will be optimized for both desktop and mobile viewing
 - Focus on accessibility (WCAG 2.1 AA compliance)
 - SEO optimization for better discoverability
-- Integration with existing CI/CD pipeline for automated deployments
+- Static deployment to GitHub Pages with manual or GitHub Actions-based updates
+- All data consumed from pre-generated static JSON files in the repository
 
 ## Success Metrics
 - Website loads in under 2 seconds on average connection

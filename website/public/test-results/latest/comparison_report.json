@@ -1,0 +1,73 @@
+{
+  "id": "bd14e3bc-d47f-4425-8bbb-b346a2d654b6",
+  "timestamp": "2025-07-26T16:38:06.522164+00:00",
+  "test_results": [
+    {
+      "id": "4fd4dce6-7482-4c4f-bd5a-8aab32d41a9a",
+      "language": "clojure",
+      "timestamp": "2025-07-26T16:38:06.505697+00:00",
+      "execution_time_ms": 0,
+      "timing": {
+        "setup_time_ms": 0,
+        "execution_time_ms": 0,
+        "teardown_time_ms": 0,
+        "total_time_ms": 0
+      },
+      "system_info": {
+        "os": "Darwin",
+        "arch": "24.5.0",
+        "cpu_count": 8,
+        "total_memory": 17179869184,
+        "available_memory": 0
+      },
+      "process_stats": null,
+      "tests": [],
+      "summary": {
+        "total": 3,
+        "passed": 2,
+        "failed": 1,
+        "errors": 0,
+        "execution_time_ms": 0
+      },
+      "metadata": {
+        "runner_version": "0.1.0",
+        "format_version": "2.0",
+        "environment": {
+          "PATH": "/Users/alexanderstreltsov/.rvm/gems/ruby-2.7.6/bin:/Users/alexanderstreltsov/.rvm/gems/ruby-2.7.6@global/bin:/Users/alexanderstreltsov/.rvm/rubies/ruby-2.7.6/bin:/Users/alexanderstreltsov/.cargo/bin:/Library/Java/JavaVirtualMachines/graalvm-community-openjdk-21/Contents/Home/bin:/opt/homebrew/opt/dotnet@6/bin:/Users/alexanderstreltsov/.deno/bin:/Users/alexanderstreltsov/.local/state/fnm_multishells/22072_1753547750569/bin:/Users/alexanderstreltsov/Library/Application Support/fnm:/Users/alexanderstreltsov/.sdkman/candidates/java/current/bin:/Users/alexanderstreltsov/.bun/bin:/Users/alexanderstreltsov/.rd/bin:/Users/alexanderstreltsov/Library/pnpm:/Users/alexanderstreltsov/Library/Caches/fnm_multishells/66680_1660731940040/bin:/opt/homebrew/share/google-cloud-sdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/TeX/texbin:/usr/local/share/dotnet:~/.dotnet/tools:/Users/alexanderstreltsov/.cargo/bin:/Users/alexanderstreltsov/work/octofhir/benchmarks/node_modules/.bin:/Users/alexanderstreltsov/Library/Application Support/JetBrains/Toolbox/scripts:/Users/alexanderstreltsov/.local/bin:/Users/alexanderstreltsov/.orbstack/bin:/Users/alexanderstreltsov/.local/bin:/Users/alexanderstreltsov/Library/Android/sdk/emulator:/Users/alexanderstreltsov/Library/Android/sdk/platform-tools:/Users/alexanderstreltsov/.rvm/bin",
+          "HOME": "/Users/alexanderstreltsov"
+        },
+        "command_line": [
+          "target/debug/fhirpath-runner",
+          "run",
+          "--languages",
+          "clojure",
+          "--tests-only"
+        ]
+      },
+      "error": null
+    }
+  ],
+  "benchmark_results": [],
+  "summary": {
+    "languages_tested": 1,
+    "total_tests": 3,
+    "total_benchmarks": 0,
+    "fastest_implementation": null,
+    "most_compliant_implementation": "clojure"
+  },
+  "metadata": {
+    "runner_version": "0.1.0",
+    "format_version": "2.0",
+    "environment": {
+      "HOME": "/Users/alexanderstreltsov",
+      "PATH": "/Users/alexanderstreltsov/.rvm/gems/ruby-2.7.6/bin:/Users/alexanderstreltsov/.rvm/gems/ruby-2.7.6@global/bin:/Users/alexanderstreltsov/.rvm/rubies/ruby-2.7.6/bin:/Users/alexanderstreltsov/.cargo/bin:/Library/Java/JavaVirtualMachines/graalvm-community-openjdk-21/Contents/Home/bin:/opt/homebrew/opt/dotnet@6/bin:/Users/alexanderstreltsov/.deno/bin:/Users/alexanderstreltsov/.local/state/fnm_multishells/22072_1753547750569/bin:/Users/alexanderstreltsov/Library/Application Support/fnm:/Users/alexanderstreltsov/.sdkman/candidates/java/current/bin:/Users/alexanderstreltsov/.bun/bin:/Users/alexanderstreltsov/.rd/bin:/Users/alexanderstreltsov/Library/pnpm:/Users/alexanderstreltsov/Library/Caches/fnm_multishells/66680_1660731940040/bin:/opt/homebrew/share/google-cloud-sdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/TeX/texbin:/usr/local/share/dotnet:~/.dotnet/tools:/Users/alexanderstreltsov/.cargo/bin:/Users/alexanderstreltsov/work/octofhir/benchmarks/node_modules/.bin:/Users/alexanderstreltsov/Library/Application Support/JetBrains/Toolbox/scripts:/Users/alexanderstreltsov/.local/bin:/Users/alexanderstreltsov/.orbstack/bin:/Users/alexanderstreltsov/.local/bin:/Users/alexanderstreltsov/Library/Android/sdk/emulator:/Users/alexanderstreltsov/Library/Android/sdk/platform-tools:/Users/alexanderstreltsov/.rvm/bin"
+    },
+    "command_line": [
+      "target/debug/fhirpath-runner",
+      "run",
+      "--languages",
+      "clojure",
+      "--tests-only"
+    ]
+  }
+}

@@ -1,141 +1,344 @@
 {
+  "id": "6515ad6e-e828-4935-b326-6e99e23a4ecc",
   "language": "csharp",
-  "timestamp": 1753200287,
-  "benchmarks": [
-    {
-      "name": "complexPathNavigation",
-      "description": "Complex path navigation performance test",
-      "expression": "Patient.name.where(use = \u0027official\u0027).given.first()",
-      "iterations": 1000,
-      "avg_time_ms": 0.0400847,
-      "min_time_ms": 0.0277,
-      "max_time_ms": 5.056,
-      "ops_per_second": 24947.174358296306
-    },
-    {
-      "name": "functionChaining",
-      "description": "Function chaining performance test",
-      "expression": "Patient.telecom.where(system = \u0027phone\u0027).value.substring(0, 3)",
-      "iterations": 1000,
-      "avg_time_ms": 0.19259090000000012,
-      "min_time_ms": 0.1466,
-      "max_time_ms": 2.0822,
-      "ops_per_second": 5192.353325105181
-    },
-    {
-      "name": "multipleConditionsFiltering",
-      "description": "Complex filtering with multiple conditions and logical operators",
-      "expression": "Patient.telecom.where(system = \u0027phone\u0027 and use != \u0027old\u0027 and rank.exists()).select(value \u002B \u0027 (\u0027 \u002B use \u002B \u0027)\u0027)",
-      "iterations": 1000,
-      "avg_time_ms": 0.15944950000000002,
-      "min_time_ms": 0.1345,
-      "max_time_ms": 0.6456,
-      "ops_per_second": 6271.578148567414
-    },
-    {
-      "name": "nestedCollectionOperations",
-      "description": "Nested collection operations with type checking",
-      "expression": "Patient.name.where(use.exists()).count() \u002B Patient.telecom.where(system.exists()).count()",
-      "iterations": 1000,
-      "avg_time_ms": 0.037369499999999986,
-      "min_time_ms": 0.0316,
-      "max_time_ms": 0.5125,
-      "ops_per_second": 26759.790738436437
-    },
-    {
-      "name": "dateTimeComparisons",
-      "description": "Complex date/time operations and comparisons",
-      "expression": "Patient.telecom.where(period.end.exists()).count() \u002B Patient.birthDate.toString().length()",
-      "iterations": 1000,
-      "avg_time_ms": 0.035945999999999916,
-      "min_time_ms": 0.0322,
-      "max_time_ms": 0.5991,
-      "ops_per_second": 27819.507038335345
-    },
-    {
-      "name": "quantityOperations",
-      "description": "Mathematical operations on quantities and numeric values",
-      "expression": "Observation.valueQuantity.value.toString().length() \u002B Observation.code.coding.count() * 10",
-      "iterations": 1000,
-      "avg_time_ms": 0.015783899999999938,
-      "min_time_ms": 0.0142,
-      "max_time_ms": 0.2964,
-      "ops_per_second": 63355.69789469041
-    },
-    {
-      "name": "codingSystemFiltering",
-      "description": "Complex filtering across multiple coding systems",
-      "expression": "Observation.code.coding.where(system.contains(\u0027loinc\u0027) or system.contains(\u0027snomed\u0027)).select(code \u002B \u0027@\u0027 \u002B system.split(\u0027/\u0027).last())",
-      "iterations": 1000,
-      "avg_time_ms": 0.16289440000000013,
-      "min_time_ms": 0.1456,
-      "max_time_ms": 0.6672,
-      "ops_per_second": 6138.946458564562
-    },
-    {
-      "name": "hierarchicalNavigation",
-      "description": "Deep hierarchical navigation with conditional logic",
-      "expression": "Questionnaire.item.item.item.where(enableWhen.exists()).select(linkId \u002B \u0027: \u0027 \u002B code.coding.where(system.contains(\u0027snomed\u0027)).display.first())",
-      "iterations": 1000,
-      "avg_time_ms": 0.04223049999999991,
-      "min_time_ms": 0.0357,
-      "max_time_ms": 0.5648,
-      "ops_per_second": 23679.568084678187
-    },
-    {
-      "name": "recursiveItemSearch",
-      "description": "Recursive search through nested questionnaire items",
-      "expression": "Questionnaire.descendants().where(resourceType = \u0027item\u0027 and type = \u0027choice\u0027 and answerValueSet.exists()).linkId",
-      "iterations": 1000,
-      "avg_time_ms": 0.4937414999999996,
-      "min_time_ms": 0.3387,
-      "max_time_ms": 1.5848,
-      "ops_per_second": 2025.3513225037814
-    },
-    {
-      "name": "valueSetExpansionAnalysis",
-      "description": "Complex analysis of ValueSet expansion hierarchy",
-      "expression": "ValueSet.expansion.contains.where(abstract.exists() and abstract = true).contains.where(display.contains(\u0027Mass\u0027)).count()",
-      "iterations": 1000,
-      "avg_time_ms": 0.05693090000000026,
-      "min_time_ms": 0.0505,
-      "max_time_ms": 0.3917,
-      "ops_per_second": 17565.15354578964
-    },
-    {
-      "name": "conditionalExpressions",
-      "description": "Complex conditional expressions with iif and boolean logic",
-      "expression": "iif(Observation.valueQuantity.value \u003E 180, \u0027High\u0027, iif(Observation.valueQuantity.value \u003C 150, \u0027Low\u0027, \u0027Normal\u0027)) \u002B \u0027 - \u0027 \u002B Observation.status.upper()",
-      "iterations": 1000,
-      "avg_time_ms": 0.01926510000000017,
-      "min_time_ms": 0.016,
-      "max_time_ms": 0.5737,
-      "ops_per_second": 51907.335025511995
-    },
-    {
-      "name": "crossResourceReferences",
-      "description": "Complex reference handling and path resolution",
-      "expression": "Observation.subject.reference.split(\u0027/\u0027).last() \u002B \u0027_\u0027 \u002B Observation.encounter.reference.split(\u0027/\u0027).last() \u002B \u0027_\u0027 \u002B Observation.id",
-      "iterations": 1000,
-      "avg_time_ms": 0.04499730000000007,
-      "min_time_ms": 0.0409,
-      "max_time_ms": 0.2445,
-      "ops_per_second": 22223.55563556032
-    },
-    {
-      "name": "errorHandlingExpressions",
-      "description": "Expressions testing error handling and edge cases",
-      "expression": "Patient.name.where(use = \u0027nonexistent\u0027).given.first().empty().not() or Patient.telecom.where(system = \u0027email\u0027).value.matches(\u0027.*@.*\u0027).allTrue()",
-      "iterations": 1000,
-      "avg_time_ms": 0.024271399999999888,
-      "min_time_ms": 0.0202,
-      "max_time_ms": 0.366,
-      "ops_per_second": 41200.754797828085
-    }
-  ],
+  "timestamp": "2025-07-22T19:04:47Z",
+  "timing": {
+    "setup_time_ms": 0,
+    "execution_time_ms": 0,
+    "teardown_time_ms": 0,
+    "total_time_ms": 0
+  },
   "system_info": {
     "platform": "Unix 15.5.0",
     "dotnet_version": "6.0.36",
     "fhirpath_version": "Hl7.FhirPath 5.5.0"
-  }
+  },
+  "process_stats": null,
+  "benchmarks": [
+    {
+      "name": "complexPathNavigation",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.0400847,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 5,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.0400847,
+        "median": 0.0,
+        "min": 0.0277,
+        "max": 5.056,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "functionChaining",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.19259090000000012,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 2,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.19259090000000012,
+        "median": 0.0,
+        "min": 0.1466,
+        "max": 2.0822,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "multipleConditionsFiltering",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.15944950000000002,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.15944950000000002,
+        "median": 0.0,
+        "min": 0.1345,
+        "max": 0.6456,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "nestedCollectionOperations",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.037369499999999986,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.037369499999999986,
+        "median": 0.0,
+        "min": 0.0316,
+        "max": 0.5125,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "dateTimeComparisons",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.035945999999999916,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.035945999999999916,
+        "median": 0.0,
+        "min": 0.0322,
+        "max": 0.5991,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "quantityOperations",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.015783899999999938,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.015783899999999938,
+        "median": 0.0,
+        "min": 0.0142,
+        "max": 0.2964,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "codingSystemFiltering",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.16289440000000013,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.16289440000000013,
+        "median": 0.0,
+        "min": 0.1456,
+        "max": 0.6672,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "hierarchicalNavigation",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.04223049999999991,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.04223049999999991,
+        "median": 0.0,
+        "min": 0.0357,
+        "max": 0.5648,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "recursiveItemSearch",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.4937414999999996,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 1,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.4937414999999996,
+        "median": 0.0,
+        "min": 0.3387,
+        "max": 1.5848,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "valueSetExpansionAnalysis",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.05693090000000026,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.05693090000000026,
+        "median": 0.0,
+        "min": 0.0505,
+        "max": 0.3917,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "conditionalExpressions",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.01926510000000017,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.01926510000000017,
+        "median": 0.0,
+        "min": 0.016,
+        "max": 0.5737,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "crossResourceReferences",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.04499730000000007,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.04499730000000007,
+        "median": 0.0,
+        "min": 0.0409,
+        "max": 0.2445,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "errorHandlingExpressions",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.024271399999999888,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 0,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.024271399999999888,
+        "median": 0.0,
+        "min": 0.0202,
+        "max": 0.366,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_cases": 13,
+    "total_iterations": 13000,
+    "total_time_ms": 0,
+    "avg_time_per_case_ms": 0.0
+  },
+  "metadata": {
+    "runner_version": "0.1.0",
+    "format_version": "2.0",
+    "environment": {},
+    "command_line": []
+  },
+  "error": null
 }

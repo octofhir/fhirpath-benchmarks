@@ -1,1 +1,6 @@
+export { AdvancedPerformanceDashboard } from './advanced-performance-dashboard'
+export { FiltersPanel } from './filters-panel'
+export { ImplementationAnalytics } from './implementation-analytics'
 export { NavigationHeader } from './navigation-header'
+export { PerformanceCharts } from './performance-charts'
+export { TestResultsMatrix } from './test-results-matrix'

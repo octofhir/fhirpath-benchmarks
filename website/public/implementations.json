@@ -1,0 +1,165 @@
+{
+  "implementations": [
+    {
+      "id": "clojure",
+      "name": "Clojure",
+      "language": "Clojure",
+      "description": "FHIRPath implementation using Clojure functional programming language",
+      "version": "1.0.0",
+      "buildSystem": "Leiningen/deps.edn",
+      "runtime": "JVM",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/clojure",
+      "features": [
+        "Functional programming approach",
+        "JVM-based runtime",
+        "Immutable data structures",
+        "REPL-driven development"
+      ],
+      "dependencies": ["org.clojure/clojure", "cheshire", "clojure.java-time"],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "medium",
+        "strengths": ["Memory efficiency", "Functional paradigm"],
+        "considerations": ["JVM startup time", "Learning curve"]
+      }
+    },
+    {
+      "id": "csharp",
+      "name": "C#",
+      "language": "C#",
+      "description": "FHIRPath implementation using C# and .NET ecosystem",
+      "version": "1.0.0",
+      "buildSystem": ".NET Core",
+      "runtime": ".NET",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/csharp",
+      "features": ["Strong typing", "Cross-platform .NET", "Rich ecosystem", "Enterprise-ready"],
+      "dependencies": ["Hl7.Fhir.R4", "Newtonsoft.Json", "System.Text.Json"],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "high",
+        "strengths": ["Compiled performance", "Memory management", "Type safety"],
+        "considerations": ["Platform dependency", "Larger runtime"]
+      }
+    },
+    {
+      "id": "go",
+      "name": "Go",
+      "language": "Go",
+      "description": "FHIRPath implementation using Go programming language",
+      "version": "1.0.0",
+      "buildSystem": "Go modules",
+      "runtime": "Native",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/go",
+      "features": [
+        "Compiled to native binary",
+        "Concurrent programming",
+        "Simple deployment",
+        "Fast compilation"
+      ],
+      "dependencies": ["encoding/json", "fmt", "os"],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "high",
+        "strengths": ["Native performance", "Low memory footprint", "Fast startup"],
+        "considerations": ["Limited ecosystem", "Verbose error handling"]
+      }
+    },
+    {
+      "id": "java",
+      "name": "Java",
+      "language": "Java",
+      "description": "FHIRPath implementation using Java and Maven build system",
+      "version": "1.0.0",
+      "buildSystem": "Maven",
+      "runtime": "JVM",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/java",
+      "features": ["Enterprise-grade", "Rich ecosystem", "Platform independence", "Strong tooling"],
+      "dependencies": [
+        "ca.uhn.hapi.fhir:hapi-fhir-structures-r4",
+        "ca.uhn.hapi.fhir:hapi-fhir-validation",
+        "com.fasterxml.jackson.core:jackson-databind"
+      ],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "high",
+        "strengths": ["JVM optimizations", "Mature ecosystem", "Scalability"],
+        "considerations": ["JVM startup time", "Memory usage", "Verbosity"]
+      }
+    },
+    {
+      "id": "javascript",
+      "name": "JavaScript",
+      "language": "JavaScript",
+      "description": "FHIRPath implementation using Node.js JavaScript runtime",
+      "version": "1.0.0",
+      "buildSystem": "npm",
+      "runtime": "Node.js",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/javascript",
+      "features": ["Dynamic typing", "Event-driven", "Large ecosystem", "Web-native"],
+      "dependencies": ["fhirpath", "fs", "path"],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "medium",
+        "strengths": ["Fast development", "JSON native", "Large community"],
+        "considerations": ["Single-threaded", "Dynamic typing overhead", "Memory usage"]
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "language": "Python",
+      "description": "FHIRPath implementation using Python programming language",
+      "version": "1.0.0",
+      "buildSystem": "pip",
+      "runtime": "CPython",
+      "maintainer": "OctoFHIR Team",
+      "repository": "https://github.com/octofhir/fhirpath-benchmarks",
+      "documentation": "https://github.com/octofhir/fhirpath-benchmarks/tree/main/implementations/python",
+      "features": [
+        "Readable syntax",
+        "Rich data science ecosystem",
+        "Rapid prototyping",
+        "Cross-platform"
+      ],
+      "dependencies": ["fhirpathpy", "json", "sys"],
+      "status": "active",
+      "lastUpdated": "2025-07-26",
+      "performance": {
+        "category": "medium",
+        "strengths": ["Development speed", "Library ecosystem", "Readability"],
+        "considerations": ["Interpreted performance", "GIL limitations", "Memory usage"]
+      }
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-07-26T19:31:00Z",
+    "totalImplementations": 6,
+    "categories": {
+      "high": ["csharp", "go", "java"],
+      "medium": ["clojure", "javascript", "python"]
+    },
+    "runtimes": {
+      "JVM": ["clojure", "java"],
+      "Native": ["go"],
+      ".NET": ["csharp"],
+      "Node.js": ["javascript"],
+      "CPython": ["python"]
+    }
+  }
+}

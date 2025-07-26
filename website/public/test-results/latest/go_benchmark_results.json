@@ -1,0 +1,152 @@
+{
+  "id": "9aa8ae02-bec5-4fc1-a37c-c7479566aa49",
+  "language": "go",
+  "timestamp": "2025-07-22T21:57:26.104764Z",
+  "timing": {
+    "setup_time_ms": 0,
+    "execution_time_ms": 0,
+    "teardown_time_ms": 0,
+    "total_time_ms": 0
+  },
+  "system_info": {
+    "platform": "darwin",
+    "go_version": "go1.24.5",
+    "fhirpath_version": "fhir-toolbox-go"
+  },
+  "process_stats": null,
+  "benchmarks": [
+    {
+      "name": "complexPathNavigation",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.020377646,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 4,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.020377646,
+        "median": 0.0,
+        "min": 0.004125,
+        "max": 4.946,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "multipleConditionsFiltering",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.05934806599999996,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 4,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.05934806599999996,
+        "median": 0.0,
+        "min": 0.0135,
+        "max": 4.716334,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "nestedCollectionOperations",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.025813206000000033,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 1,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.025813206000000033,
+        "median": 0.0,
+        "min": 0.00825,
+        "max": 1.341459,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "dateTimeComparisons",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.017772332999999998,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 1,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.017772332999999998,
+        "median": 0.0,
+        "min": 0.0065,
+        "max": 1.568583,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    },
+    {
+      "name": "errorHandlingExpressions",
+      "file": "unknown.json",
+      "iterations": 1000,
+      "total_time_ms": 0,
+      "avg_time_ms": 0.03413024800000004,
+      "median_time_ms": 0.0,
+      "min_time_ms": 0,
+      "max_time_ms": 2,
+      "std_dev_ms": 0.0,
+      "times": [],
+      "statistical_summary": {
+        "mean": 0.03413024800000004,
+        "median": 0.0,
+        "min": 0.009375,
+        "max": 2.027958,
+        "stdDev": 0.0,
+        "percentile95": 0.0,
+        "percentile99": 0.0
+      },
+      "memory_stats": null,
+      "warmup_iterations": 0,
+      "error": null
+    }
+  ],
+  "summary": {
+    "total_cases": 5,
+    "total_iterations": 5000,
+    "total_time_ms": 0,
+    "avg_time_per_case_ms": 0.0
+  },
+  "metadata": {
+    "runner_version": "0.1.0",
+    "format_version": "2.0",
+    "environment": {},
+    "command_line": []
+  },
+  "error": null
+}

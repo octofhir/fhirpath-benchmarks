@@ -26,7 +26,7 @@ impl ImplementationRunner for JavaScriptRunner {
 
     async fn setup(&self, config: &ImplementationConfig, impl_dir: &PathBuf) -> Result<()> {
         println!("🔧 Setting up {} implementation...", self.name());
-        
+
         let output = self.base.execute_command(
             &config.setup_command,
             impl_dir,
@@ -60,7 +60,7 @@ impl ImplementationRunner for JavaScriptRunner {
         }
 
         // Try to load results from the generated file
-        let pattern = "javascript_test_results*.json";
+        let pattern = "javascript_test_results.json";
         if let Some(result) = self.base.load_result_from_file::<TestResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -88,7 +88,7 @@ impl ImplementationRunner for JavaScriptRunner {
         }
 
         // Try to load results from the generated file
-        let pattern = "javascript_benchmark_results*.json";
+        let pattern = "javascript_benchmark_results.json";
         if let Some(result) = self.base.load_result_from_file::<BenchmarkResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -101,7 +101,7 @@ impl ImplementationRunner for JavaScriptRunner {
 impl JavaScriptRunner {
     fn parse_test_output(&self, output: &str) -> Result<TestResult> {
         let mut result = TestResult::new("javascript".to_string(), crate::utils::get_system_info());
-        
+
         // Basic parsing - look for common test output patterns
         let lines: Vec<&str> = output.lines().collect();
         let mut passed_count = 0;

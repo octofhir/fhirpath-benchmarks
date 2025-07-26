@@ -26,7 +26,7 @@ impl ImplementationRunner for JavaRunner {
 
     async fn setup(&self, config: &ImplementationConfig, impl_dir: &PathBuf) -> Result<()> {
         println!("🔧 Setting up {} implementation...", self.name());
-        
+
         let output = self.base.execute_command(
             &config.setup_command,
             impl_dir,
@@ -58,7 +58,7 @@ impl ImplementationRunner for JavaRunner {
             return Ok(self.base.create_error_test_result("java", &stderr));
         }
 
-        let pattern = "java_test_results*.json";
+        let pattern = "java_test_results.json";
         if let Some(result) = self.base.load_result_from_file::<TestResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -83,7 +83,7 @@ impl ImplementationRunner for JavaRunner {
             return Ok(self.base.create_error_benchmark_result("java", &stderr));
         }
 
-        let pattern = "java_benchmark_results*.json";
+        let pattern = "java_benchmark_results.json";
         if let Some(result) = self.base.load_result_from_file::<BenchmarkResult>(results_dir, pattern).await? {
             return Ok(result);
         }
@@ -95,7 +95,7 @@ impl ImplementationRunner for JavaRunner {
 impl JavaRunner {
     fn parse_test_output(&self, output: &str) -> Result<TestResult> {
         let mut result = TestResult::new("java".to_string(), crate::utils::get_system_info());
-        
+
         let lines: Vec<&str> = output.lines().collect();
         let mut passed_count = 0;
         let mut total_count = 0;

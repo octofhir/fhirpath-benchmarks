@@ -7,14 +7,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/octofhir/benchmarks.git"
+    "url": "git+https://github.com/octofhir/fhirpath-benchmarks.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/octofhir/benchmarks/issues"
+    "url": "https://github.com/octofhir/fhirpath-benchmarks.git"
   },
-  "homepage": "https://github.com/octofhir/benchmarks#readme",
+  "homepage": "https://github.com/octofhir/fhirpath-benchmarks.git#readme",
   "description": "",
   "devDependencies": {
     "lefthook": "^1.12.2"

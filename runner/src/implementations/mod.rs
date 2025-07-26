@@ -6,8 +6,8 @@ use tokio::process::Command;
 use tokio::time::{timeout, Duration};
 
 use crate::config::ImplementationConfig;
-use crate::results::{TestResult, BenchmarkResult};
-use crate::utils::get_system_info;
+use crate::results::{TestResult, BenchmarkResult, ExecutionTiming};
+use crate::utils::{get_system_info, get_process_stats, get_timestamp_ms};
 
 pub mod javascript;
 pub mod python;
@@ -68,6 +68,30 @@ impl BaseRunner {
         result.error = Some(error.to_string());
         result.summary.errors = 1;
         result
+    }
+
+    pub async fn execute_with_timing(&self, 
+                                   command: &[String], 
+                                   working_dir: &PathBuf, 
+                                   timeout_secs: u64) -> Result<(std::process::Output, ExecutionTiming)> {
+        let start_time = get_timestamp_ms();
+        
+        let output = self.execute_command(command, working_dir, timeout_secs).await?;
+        
+        let end_time = get_timestamp_ms();
+        let mut timing = ExecutionTiming::new();
+        timing.execution_time_ms = end_time - start_time;
+        timing.calculate_total();
+        
+        Ok((output, timing))
+    }
+
+    pub fn collect_process_stats(&self, process_id: Option<u32>) -> Option<crate::utils::ProcessStats> {
+        if let Some(pid) = process_id {
+            get_process_stats(pid)
+        } else {
+            get_process_stats(std::process::id())
+        }
     }
 
     pub fn create_error_benchmark_result(&self, language: &str, error: &str) -> BenchmarkResult {
