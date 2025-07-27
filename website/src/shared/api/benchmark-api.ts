@@ -31,7 +31,7 @@ const DEFAULT_TTL = 5 * 60 * 1000 // 5 minutes
 function getCachedData<T>(key: string): T | null {
   const cached = cache[key]
   if (cached && Date.now() - cached.timestamp < cached.ttl) {
-    return cached.data
+    return cached.data as T
   }
   return null
 }

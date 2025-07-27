@@ -18,7 +18,7 @@ import {
 import type { FilterOptions, TestCase } from '@shared/lib'
 import { IconChevronDown, IconChevronUp, IconSearch } from '@tabler/icons-react'
 import { FiltersPanel } from '@widgets/filters-panel'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 // Mock test cases for demonstration
 const mockTestCases: TestCase[] = [

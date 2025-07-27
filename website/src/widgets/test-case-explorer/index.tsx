@@ -61,7 +61,7 @@ interface ComplexityMetrics {
   overallScore: number
 }
 
-export function TestCaseExplorer({ implementations, testResults = [] }: TestCaseExplorerProps) {
+export function TestCaseExplorer({ testResults = [] }: TestCaseExplorerProps) {
   const [activeTab, setActiveTab] = useState<string>('dependency-graph')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [complexityFilter, setComplexityFilter] = useState<string>('all')
@@ -351,7 +351,7 @@ export function TestCaseExplorer({ implementations, testResults = [] }: TestCase
       </SimpleGrid>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'dependency-graph')}>
         <Tabs.List>
           <Tabs.Tab value="dependency-graph" leftSection={<IconNetwork size={16} />}>
             Dependency Graph

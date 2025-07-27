@@ -21,7 +21,7 @@ import {
   IconBrain,
   IconClock,
   IconFilter,
-  IconSpeed,
+  IconSend,
   IconTarget,
   IconTrendingDown,
   IconTrendingUp,
@@ -66,7 +66,7 @@ interface DifficultyMetrics {
   }
 }
 
-export function TestCaseAnalytics({ implementations, testResults = [] }: TestCaseAnalyticsProps) {
+export function TestCaseAnalytics({ testResults = [] }: TestCaseAnalyticsProps) {
   const [activeTab, setActiveTab] = useState<string>('execution-time')
   const [selectedMetric, setSelectedMetric] = useState<string>('avg-time')
   const [timeRange, setTimeRange] = useState<string>('all')
@@ -345,7 +345,7 @@ export function TestCaseAnalytics({ implementations, testResults = [] }: TestCas
       </SimpleGrid>
 
       {/* Main Analytics Tabs */}
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'execution-time')}>
         <Tabs.List>
           <Tabs.Tab value="execution-time" leftSection={<IconClock size={16} />}>
             Execution Time Analysis
@@ -356,7 +356,7 @@ export function TestCaseAnalytics({ implementations, testResults = [] }: TestCas
           <Tabs.Tab value="difficulty-scoring" leftSection={<IconBrain size={16} />}>
             Difficulty Scoring
           </Tabs.Tab>
-          <Tabs.Tab value="performance-insights" leftSection={<IconSpeed size={16} />}>
+          <Tabs.Tab value="performance-insights" leftSection={<IconSend size={16} />}>
             Performance Insights
           </Tabs.Tab>
         </Tabs.List>
@@ -520,11 +520,14 @@ export function TestCaseAnalytics({ implementations, testResults = [] }: TestCas
 
               <Card.Section p="md">
                 <ScatterChart
-                  data={successRateMetrics.slice(0, 20).map((metric) => ({
-                    x: metric.implementations.length,
-                    y: metric.successRate,
-                    name: metric.testName,
-                  }))}
+                  data={[{
+                    name: 'Test Cases',
+                    color: 'blue',
+                    data: successRateMetrics.slice(0, 20).map((metric) => ({
+                      x: metric.implementations.length,
+                      y: metric.successRate,
+                    }))
+                  }]}
                   dataKey={{ x: 'x', y: 'y' }}
                   h={300}
                   xAxisLabel="Implementation Count"

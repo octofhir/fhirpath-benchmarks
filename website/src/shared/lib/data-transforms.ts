@@ -152,7 +152,7 @@ export function groupTestCasesByCategory(testResults: TestResult[]): Record<
       }
       return acc
     },
-    {} as Record<string, unknown>,
+    {} as Record<string, { total: number; passed: number; failed: number; pass_rate: number }>,
   )
 }
 

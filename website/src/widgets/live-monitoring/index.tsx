@@ -512,7 +512,7 @@ export function LiveMonitoring({
                     <Text size="sm" c="dimmed">
                       {event.message}
                     </Text>
-                    {event.testName && <Code size="xs">{event.testName}</Code>}
+                    {event.testName && <Code>{event.testName}</Code>}
                     {event.executionTime && (
                       <Text size="xs" c="dimmed">
                         Execution time: {event.executionTime.toFixed(2)}ms

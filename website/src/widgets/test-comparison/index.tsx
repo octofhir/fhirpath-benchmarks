@@ -25,7 +25,7 @@ import {
   IconBolt,
   IconChartRadar,
   IconCheck,
-  IconCompare,
+  IconGitCompare,
   IconDownload,
   IconEye,
   IconInfoCircle,
@@ -57,17 +57,17 @@ interface ComparisonResult {
   category: string
 }
 
-interface PerformanceImpact {
-  testName: string
-  baselineTime: number
-  implementations: {
-    language: string
-    executionTime: number
-    impact: 'positive' | 'negative' | 'neutral'
-    impactMagnitude: number
-  }[]
-  overallImpact: 'high' | 'medium' | 'low'
-}
+// interface PerformanceImpact {
+//   testName: string
+//   baselineTime: number
+//   implementations: {
+//     language: string
+//     executionTime: number
+//     impact: 'positive' | 'negative' | 'neutral'
+//     impactMagnitude: number
+//   }[]
+//   overallImpact: 'high' | 'medium' | 'low'
+// }
 
 interface ImplementationProfile {
   language: string
@@ -320,7 +320,7 @@ export function TestComparison({ implementations, testResults = [] }: TestCompar
               </Text>
             </div>
             <ThemeIcon variant="light" size="lg">
-              <IconCompare size={20} />
+              <IconGitCompare size={20} />
             </ThemeIcon>
           </Group>
         </Card>
@@ -379,9 +379,9 @@ export function TestComparison({ implementations, testResults = [] }: TestCompar
       </SimpleGrid>
 
       {/* Main comparison tabs */}
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'comparison-matrix')}>
         <Tabs.List>
-          <Tabs.Tab value="comparison-matrix" leftSection={<IconCompare size={16} />}>
+          <Tabs.Tab value="comparison-matrix" leftSection={<IconGitCompare size={16} />}>
             Comparison Matrix
           </Tabs.Tab>
           <Tabs.Tab value="performance-impact" leftSection={<IconBolt size={16} />}>
