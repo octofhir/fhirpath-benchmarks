@@ -9,88 +9,82 @@
 const fs = require('fs');
 const path = require('path');
 const fhirpath = require('fhirpath');
-const xml2js = require('xml2js');
 
 class JavaScriptTestRunner {
     constructor() {
-        this.testDataDir = path.join(__dirname, '../../test-data');
-        this.testCasesDir = path.join(__dirname, '../../test-cases');
+        this.specsDir = path.join(__dirname, '../../specs');
         this.resultsDir = path.join(__dirname, '../../results');
 
         // Ensure results directory exists
         if (!fs.existsSync(this.resultsDir)) {
             fs.mkdirSync(this.resultsDir, { recursive: true });
         }
-
-        // Load test configuration
-        const configPath = path.join(this.testCasesDir, 'test-config.json');
-        this.testConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     }
 
-    async loadOfficialTests() {
-        const xmlPath = path.join(this.testCasesDir, 'tests-fhir-r4.xml');
-        const xmlContent = fs.readFileSync(xmlPath, 'utf8');
-
-        const parser = new xml2js.Parser({
-            explicitArray: false,
-            mergeAttrs: true,
-            explicitChildren: true,
-            childkey: 'children'
-        });
-
-        const result = await parser.parseStringPromise(xmlContent);
+    loadTestSuites() {
+        const testsDir = path.join(this.specsDir, 'fhirpath/tests');
         const tests = [];
 
-        // Extract tests from groups
-        const groups = Array.isArray(result.tests.group) ? result.tests.group : [result.tests.group];
-
-        for (const group of groups) {
-            if (!group || !group.test) continue;
-
-            const groupTests = Array.isArray(group.test) ? group.test : [group.test];
-
-            for (const test of groupTests) {
-                if (!test || !test.expression) continue;
-
-                // Parse expected outputs
-                const expectedOutput = [];
-                if (test.output) {
-                    const outputs = Array.isArray(test.output) ? test.output : [test.output];
-                    for (const output of outputs) {
-                        if (output && output._ !== undefined) {
-                            expectedOutput.push({
-                                type: output.type || 'string',
-                                value: output._
-                            });
-                        }
-                    }
-                }
-
-                tests.push({
-                    name: test.name,
-                    description: test.description || test.name,
-                    inputFile: test.inputfile || 'patient-example.xml',
-                    expression: test.expression,
-                    expectedOutput: expectedOutput,
-                    predicate: test.predicate === 'true',
-                    mode: test.mode,
-                    invalid: test.invalid,
-                    group: group.name
-                });
-            }
+        if (!fs.existsSync(testsDir)) {
+            console.log(`❌ Tests directory not found: ${testsDir}`);
+            return [];
         }
 
-        return tests;
+        try {
+            // Load all JSON test files
+            const jsonFiles = fs.readdirSync(testsDir).filter(file => file.endsWith('.json'));
+            
+            for (const jsonFile of jsonFiles) {
+                const filePath = path.join(testsDir, jsonFile);
+                const testSuite = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                
+                const suiteName = testSuite.name || path.parse(jsonFile).name;
+                
+                for (const testCase of testSuite.tests || []) {
+                    // Skip disabled tests
+                    if (testCase.disable) {
+                        continue;
+                    }
+                    
+                    const inputFile = testCase.inputfile || 'patient-example.json';
+                    
+                    tests.push({
+                        name: testCase.name,
+                        description: testCase.description || testCase.name,
+                        inputFile: inputFile,
+                        expression: testCase.expression,
+                        expectedOutput: testCase.expected || [],
+                        predicate: false,  // Not used in new format
+                        mode: null,
+                        invalid: testCase.error !== undefined,
+                        group: suiteName,
+                        tags: testCase.tags || []
+                    });
+                }
+            }
+
+            return tests;
+        } catch (error) {
+            console.log(`❌ Error loading test suites: ${error}`);
+            return [];
+        }
     }
 
-    async loadTestData(filename) {
-        const filePath = path.join(this.testDataDir, filename);
-        const xmlContent = fs.readFileSync(filePath, 'utf8');
+    loadTestData(filename) {
+        const filePath = path.join(this.specsDir, 'fhirpath/tests/input', filename);
+        
+        if (!fs.existsSync(filePath)) {
+            console.warn(`⚠️  Test data file not found: ${filename}`);
+            return null;
+        }
 
-        // Convert XML to JSON for fhirpath.js
-        const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
-        const result = await parser.parseStringPromise(xmlContent);
-        return result;
+        try {
+            const jsonContent = fs.readFileSync(filePath, 'utf8');
+            return JSON.parse(jsonContent);
+        } catch (error) {
+            console.warn(`⚠️  Error loading test data ${filename}: ${error.message}`);
+            return null;
+        }
     }
 
     runSingleTest(testCase, testData) {
@@ -144,24 +138,16 @@ class JavaScriptTestRunner {
             }
         };
 
-        // Load test data files
-        const testDataCache = {};
-        for (const inputFile of this.testConfig.testData.inputFiles) {
-            try {
-                testDataCache[inputFile] = await this.loadTestData(inputFile);
-            } catch (error) {
-                console.warn(`⚠️  Could not load test data: ${inputFile} - ${error.message}`);
-            }
-        }
+        // Load and run test suites
+        console.log('📋 Loading FHIRPath test suites...');
+        const testCases = this.loadTestSuites();
+        console.log(`📊 Found ${testCases.length} test cases`);
 
-        // Load and run official tests
-        console.log('📋 Loading official FHIRPath test suite...');
-        const officialTests = await this.loadOfficialTests();
-        console.log(`📊 Found ${officialTests.length} official test cases`);
-
-        for (const testCase of officialTests) {
+        for (const testCase of testCases) {
             const inputFile = testCase.inputFile;
-            const testData = testDataCache[inputFile];
+            
+            // Load test data on demand
+            const testData = inputFile ? this.loadTestData(inputFile) : null;
 
             if (!testData) {
                 console.warn(`⚠️  Skipping test ${testCase.name} - test data not available: ${inputFile}`);
@@ -215,20 +201,28 @@ class JavaScriptTestRunner {
             }
         };
 
-        // Load test data
-        const testDataCache = {};
-        for (const inputFile of this.testConfig.testData.inputFiles) {
-            try {
-                testDataCache[inputFile] = await this.loadTestData(inputFile);
-            } catch (error) {
-                console.warn(`⚠️  Could not load test data: ${inputFile}`);
-            }
+        // Create simple benchmarks from test cases
+        const testCases = this.loadTestSuites();
+        const benchmarkTests = [];
+        
+        // Use a subset of test cases for benchmarking
+        for (let i = 0; i < Math.min(10, testCases.length); i++) {
+            const testCase = testCases[i];
+            benchmarkTests.push({
+                name: `benchmark_${testCase.name}`,
+                description: `Benchmark for ${testCase.name}`,
+                expression: testCase.expression,
+                inputFile: testCase.inputFile,
+                iterations: 100
+            });
         }
 
         // Run benchmarks
-        for (const benchmark of this.testConfig.benchmarkTests) {
-            const inputFile = benchmark.inputFile || 'patient-example.xml';
-            const testData = testDataCache[inputFile];
+        for (const benchmark of benchmarkTests) {
+            const inputFile = benchmark.inputFile || 'patient-example.json';
+            
+            // Load test data on demand
+            const testData = inputFile ? this.loadTestData(inputFile) : null;
 
             if (!testData) {
                 console.warn(`⚠️  Skipping benchmark ${benchmark.name} - test data not available`);

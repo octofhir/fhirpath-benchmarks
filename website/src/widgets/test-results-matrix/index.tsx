@@ -14,7 +14,7 @@ import {
 } from '@mantine/core'
 import { ChartContainer } from '@shared/ui'
 import { IconCheck, IconMinus, IconX } from '@tabler/icons-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 interface TestCase {
   id: string
@@ -30,7 +30,7 @@ interface TestResult {
   status: 'pass' | 'fail' | 'error' | 'skip'
   executionTime: number
   errorMessage?: string
-  output?: any
+  output?: unknown
 }
 
 interface TestResultsMatrixProps {
@@ -74,9 +74,12 @@ export function TestResultsMatrix({ testCases, results, implementations }: TestR
   }, [testCases, selectedCategory, selectedComplexity, showOnlyFailures, implementations, results])
 
   // Get result for specific test and implementation
-  const getResult = (testId: string, implementation: string): TestResult | undefined => {
-    return results.find((r) => r.testId === testId && r.implementation === implementation)
-  }
+  const getResult = useCallback(
+    (testId: string, implementation: string): TestResult | undefined => {
+      return results.find((r) => r.testId === testId && r.implementation === implementation)
+    },
+    [results],
+  )
 
   // Get status icon and color
   const getStatusDisplay = (status: TestResult['status']) => {
@@ -134,7 +137,7 @@ export function TestResultsMatrix({ testCases, results, implementations }: TestR
       error: errorCount,
       passRate: totalTests > 0 ? (passCount / totalTests) * 100 : 0,
     }
-  }, [filteredTestCases, implementations, results])
+  }, [filteredTestCases, implementations, getResult])
 
   return (
     <Stack gap="md">

@@ -15,7 +15,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { calculateDashboardStats, clearCache, loadLatestComparisonReport } from '@shared/api'
-import type { DashboardStats, ImplementationMetadata } from '@shared/lib'
+import type { DashboardStats, ImplementationMetadata, TestCaseResult } from '@shared/lib'
 import {
   formatExecutionTime,
   formatPercentage,
@@ -30,6 +30,7 @@ import {
   IconTarget,
   IconTrophy,
 } from '@tabler/icons-react'
+import { FailureAnalysis } from '@widgets/failure-analysis'
 import { PerformanceCharts } from '@widgets/performance-charts'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -40,6 +41,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [implementations, setImplementations] = useState<ImplementationMetadata[]>([])
+  const [testResults, setTestResults] = useState<TestCaseResult[]>([])
 
   const loadData = async () => {
     setLoading(true)
@@ -52,6 +54,10 @@ export default function DashboardPage() {
 
       setStats(dashboardStats)
       setImplementations(sortImplementations(implementationData, 'pass_rate'))
+
+      // Extract test case results from all test results
+      const allTestCases = comparisonReport.test_results.flatMap((result) => result.tests || [])
+      setTestResults(allTestCases)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
@@ -64,6 +70,7 @@ export default function DashboardPage() {
     await loadData()
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: okay
   useEffect(() => {
     loadData()
   }, [])
@@ -272,6 +279,17 @@ export default function DashboardPage() {
 
         <Card.Section p="md">
           <PerformanceCharts implementations={implementations} />
+        </Card.Section>
+      </Card>
+
+      {/* Failure Analysis */}
+      <Card withBorder mt="xl">
+        <Card.Section withBorder inheritPadding py="md">
+          <Title order={3}>Failure Analysis</Title>
+        </Card.Section>
+
+        <Card.Section p="md">
+          <FailureAnalysis implementations={implementations} testResults={testResults} />
         </Card.Section>
       </Card>
 

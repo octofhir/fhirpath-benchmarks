@@ -215,3 +215,215 @@ export function formatMemoryUsage(bytes: number): string {
 export function formatPercentage(value: number, precision = 1): string {
   return `${value.toFixed(precision)}%`
 }
+
+// Advanced Statistical Analysis Tools
+
+export interface ConfidenceInterval {
+  lower: number
+  upper: number
+  confidence: number
+}
+
+export function calculateConfidenceInterval(
+  values: number[],
+  confidence: number = 0.95,
+): ConfidenceInterval {
+  if (values.length === 0) {
+    return { lower: 0, upper: 0, confidence }
+  }
+
+  const stats = calculateStatistics(values)
+  const n = values.length
+  const tValue = getTValue(confidence, n - 1)
+  const standardError = stats.stdDev / Math.sqrt(n)
+  const margin = tValue * standardError
+
+  return {
+    lower: stats.mean - margin,
+    upper: stats.mean + margin,
+    confidence,
+  }
+}
+
+function getTValue(confidence: number, degreesOfFreedom: number): number {
+  // Simplified t-value lookup for common confidence levels
+  const tTable: Record<number, Record<number, number>> = {
+    0.95: { 1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 10: 2.228, 20: 2.086, 30: 2.042 },
+    0.99: { 1: 63.657, 2: 9.925, 3: 5.841, 4: 4.604, 5: 4.032, 10: 3.169, 20: 2.845, 30: 2.75 },
+  }
+
+  const table = tTable[confidence]
+  if (!table) return 1.96 // Default to z-value for 95% confidence
+
+  // Find closest degrees of freedom
+  const availableDf = Object.keys(table)
+    .map(Number)
+    .sort((a, b) => a - b)
+  const closestDf = availableDf.reduce((prev, curr) =>
+    Math.abs(curr - degreesOfFreedom) < Math.abs(prev - degreesOfFreedom) ? curr : prev,
+  )
+
+  return table[closestDf] || 1.96
+}
+
+export function detectOutliers(values: number[], method: 'iqr' | 'zscore' = 'iqr'): number[] {
+  if (values.length === 0) return []
+
+  if (method === 'iqr') {
+    const sorted = [...values].sort((a, b) => a - b)
+    const n = sorted.length
+    const q1 = sorted[Math.floor(n * 0.25)]
+    const q3 = sorted[Math.floor(n * 0.75)]
+    const iqr = q3 - q1
+    const lowerBound = q1 - 1.5 * iqr
+    const upperBound = q3 + 1.5 * iqr
+
+    return values.filter((value) => value < lowerBound || value > upperBound)
+  } else {
+    const stats = calculateStatistics(values)
+    const threshold = 2.5 // Standard deviations
+    return values.filter((value) => Math.abs(value - stats.mean) / stats.stdDev > threshold)
+  }
+}
+
+export function calculateCorrelation(x: number[], y: number[]): number {
+  if (x.length !== y.length || x.length === 0) return 0
+
+  const n = x.length
+  const meanX = x.reduce((sum, val) => sum + val, 0) / n
+  const meanY = y.reduce((sum, val) => sum + val, 0) / n
+
+  let numerator = 0
+  let sumXSquared = 0
+  let sumYSquared = 0
+
+  for (let i = 0; i < n; i++) {
+    const xDiff = x[i] - meanX
+    const yDiff = y[i] - meanY
+    numerator += xDiff * yDiff
+    sumXSquared += xDiff * xDiff
+    sumYSquared += yDiff * yDiff
+  }
+
+  const denominator = Math.sqrt(sumXSquared * sumYSquared)
+  return denominator === 0 ? 0 : numerator / denominator
+}
+
+export function performTTest(
+  sample1: number[],
+  sample2: number[],
+): {
+  tStatistic: number
+  pValue: number
+  significant: boolean
+} {
+  if (sample1.length === 0 || sample2.length === 0) {
+    return { tStatistic: 0, pValue: 1, significant: false }
+  }
+
+  const stats1 = calculateStatistics(sample1)
+  const stats2 = calculateStatistics(sample2)
+
+  const n1 = sample1.length
+  const n2 = sample2.length
+
+  const pooledStdDev = Math.sqrt(
+    ((n1 - 1) * stats1.stdDev * stats1.stdDev + (n2 - 1) * stats2.stdDev * stats2.stdDev) /
+      (n1 + n2 - 2),
+  )
+
+  const standardError = pooledStdDev * Math.sqrt(1 / n1 + 1 / n2)
+  const tStatistic = (stats1.mean - stats2.mean) / standardError
+
+  // Simplified p-value approximation
+  const pValue = Math.abs(tStatistic) > 2 ? 0.05 : 0.1
+
+  return {
+    tStatistic,
+    pValue,
+    significant: pValue < 0.05,
+  }
+}
+
+// Chart Export Functionality
+export interface ChartExportOptions {
+  format: 'png' | 'svg' | 'pdf' | 'json' | 'csv'
+  filename?: string
+  width?: number
+  height?: number
+  quality?: number
+}
+
+export function exportChartData(data: any[], options: ChartExportOptions): void {
+  const { format, filename = 'chart-data' } = options
+
+  switch (format) {
+    case 'json':
+      downloadJSON(data, filename)
+      break
+    case 'csv':
+      downloadCSV(data, filename)
+      break
+    default:
+      console.warn(`Export format ${format} not implemented for data export`)
+  }
+}
+
+function downloadJSON(data: any[], filename: string): void {
+  const jsonString = JSON.stringify(data, null, 2)
+  const blob = new Blob([jsonString], { type: 'application/json' })
+  downloadBlob(blob, `${filename}.json`)
+}
+
+function downloadCSV(data: any[], filename: string): void {
+  if (data.length === 0) return
+
+  const headers = Object.keys(data[0])
+  const csvContent = [
+    headers.join(','),
+    ...data.map((row) =>
+      headers
+        .map((header) => (typeof row[header] === 'string' ? `"${row[header]}"` : row[header]))
+        .join(','),
+    ),
+  ].join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv' })
+  downloadBlob(blob, `${filename}.csv`)
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+// Shareable Chart URLs
+export function generateShareableURL(chartConfig: {
+  type: string
+  data: any[]
+  options: any
+}): string {
+  const encoded = btoa(JSON.stringify(chartConfig))
+  return `${window.location.origin}/charts/shared/${encoded}`
+}
+
+// Mobile Optimization Utilities
+export function getResponsiveChartSize(screenWidth: number): { width: number; height: number } {
+  if (screenWidth < 768) {
+    return { width: screenWidth - 32, height: 250 }
+  } else if (screenWidth < 1024) {
+    return { width: screenWidth - 64, height: 300 }
+  } else {
+    return { width: 800, height: 400 }
+  }
+}
+
+export function isTouchDevice(): boolean {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+}

@@ -92,11 +92,7 @@ export default function TestExplorerPage() {
     'filtering',
   ]
 
-  useEffect(() => {
-    applyFilters()
-  }, [filters, searchTerm, sortBy, testCases])
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...testCases]
 
     // Apply text search
@@ -112,15 +108,13 @@ export default function TestExplorerPage() {
     // Apply category filter
     if (filters.categories && filters.categories.length > 0) {
       filtered = filtered.filter(
-        (test) => test.category && filters.categories!.includes(test.category),
+        (test) => test.category && filters.categories?.includes(test.category),
       )
     }
 
     // Apply tags filter
     if (filters.tags && filters.tags.length > 0) {
-      filtered = filtered.filter(
-        (test) => test.tags && test.tags.some((tag) => filters.tags!.includes(tag)),
-      )
+      filtered = filtered.filter((test) => test.tags?.some((tag) => filters.tags?.includes(tag)))
     }
 
     // Sort
@@ -144,7 +138,11 @@ export default function TestExplorerPage() {
 
     setFilteredTestCases(filtered)
     setCurrentPage(1) // Reset to first page when filters change
-  }
+  }, [filters, searchTerm, sortBy, testCases])
+
+  useEffect(() => {
+    applyFilters()
+  }, [applyFilters])
 
   const paginatedTestCases = filteredTestCases.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,

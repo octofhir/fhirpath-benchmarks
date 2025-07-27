@@ -4,7 +4,6 @@
   This script runs FHIRPath tests using the fhirpath.clj library
   and outputs results in a standardized format for comparison."
   (:require [clojure.data.json :as json]
-            [clojure.data.xml :as xml]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [fhirpath.core :as fp])
@@ -14,65 +13,45 @@
 (defn current-timestamp []
   (.toString (Instant/now)))
 
-(defn load-test-config []
-  "Load test configuration from test-config.json"
-  (let [config-path (io/file "../../test-cases/test-config.json")]
-    (when (.exists config-path)
-      (json/read-str (slurp config-path) :key-fn keyword))))
-
-(defn load-official-tests []
-  "Load official FHIRPath test cases from XML file"
-  (try
-    (let [xml-path (io/file "../../test-cases/tests-fhir-r4.xml")
-          xml-content (slurp xml-path)
-          parsed-xml (xml/parse-str xml-content)
-          groups (filter #(= :group (:tag %)) (:content parsed-xml))]
-
-      (flatten
-        (for [group groups
-              :let [group-name (get-in group [:attrs :name] "unknown")]
-              test (filter #(= :test (:tag %)) (:content group))
-              :let [test-attrs (:attrs test)
-                    test-name (:name test-attrs)
-                    test-description (or (:description test-attrs) test-name)
-                    input-file (or (:inputfile test-attrs) "patient-example.xml")
-                    predicate (= "true" (:predicate test-attrs))
-                    mode (:mode test-attrs)
-                    invalid (:invalid test-attrs)
-
-                    expression-elem (first (filter #(= :expression (:tag %)) (:content test)))
-                    expression (when expression-elem (first (:content expression-elem)))
-
-                    output-elems (filter #(= :output (:tag %)) (:content test))
-                    expected-output (for [output output-elems
-                                         :let [output-type (get-in output [:attrs :type] "string")
-                                               output-value (first (:content output))]]
-                                     {:type output-type :value output-value})]
-              :when (and expression (not (str/blank? expression)))]
-
-          {:name test-name
-           :description test-description
-           :inputFile input-file
-           :expression expression
-           :expectedOutput expected-output
-           :predicate predicate
-           :mode mode
-           :invalid invalid
-           :group group-name})))
-
-    (catch Exception e
-      (println (str "❌ Error loading official tests: " (.getMessage e)))
-      [])))
+(defn load-test-suites []
+  "Load FHIRPath test cases from new JSON format"
+  (let [tests-dir (io/file "../../specs/fhirpath/tests")
+        tests (atom [])]
+    (when (.exists tests-dir)
+      (doseq [json-file (.listFiles tests-dir)
+              :when (and (.isFile json-file)
+                        (.endsWith (.getName json-file) ".json"))]
+        (try
+          (let [test-suite (json/read-str (slurp json-file) :key-fn keyword)
+                suite-name (or (:name test-suite) (str/replace (.getName json-file) ".json" ""))
+                test-cases (:tests test-suite [])]
+            (doseq [test-case test-cases
+                    :when (not (:disable test-case))]
+              (let [input-file (or (:inputfile test-case) "patient-example.json")]
+                (swap! tests conj {
+                  :name (:name test-case)
+                  :description (or (:description test-case) (:name test-case))
+                  :inputFile input-file
+                  :expression (:expression test-case)
+                  :expectedOutput (or (:expected test-case) [])
+                  :predicate false
+                  :mode nil
+                  :invalid (some? (:error test-case))
+                  :group suite-name
+                  :tags (or (:tags test-case) [])
+                }))))
+          (catch Exception e
+            (println (str "⚠️  Failed to load test file " (.getName json-file) ": " (.getMessage e)))))))
+    @tests))
 
 (defn load-test-data [filename]
-  "Load test data from XML file and convert to Clojure data structure"
-  (let [file-path (io/file (str "../../test-data/" filename))]
+  "Load test data from JSON file"
+  (let [file-path (io/file (str "../../specs/fhirpath/tests/input/" filename))]
     (when (.exists file-path)
       (try
-        (let [xml-content (slurp file-path)
-              parsed-xml (xml/parse-str xml-content)]
-          ;; Return the parsed XML structure that fhirpath.clj can work with
-          parsed-xml)
+        (let [json-content (slurp file-path)
+              parsed-json (json/read-str json-content :key-fn keyword)]
+          parsed-json)
         (catch Exception e
           (println (str "⚠️  Error loading test data " filename ": " (.getMessage e)))
           nil)))))
@@ -124,14 +103,17 @@
   "Run all FHIRPath tests and return results"
   (println "🧪 Running Clojure FHIRPath tests...")
 
-  (let [tests (load-official-tests)
-        test-config (load-test-config)
+  (let [tests (load-test-suites)
         start-time (current-timestamp)]
 
     (println (str "📋 Loaded " (count tests) " test cases"))
 
     (let [results (for [test tests
-                       :let [test-data (load-test-data (:inputFile test))]]
+                       :let [input-file (:inputFile test)
+                             test-data (cond
+                                       (nil? input-file) {} ; No input file needed
+                                       :else (load-test-data input-file))]
+                       :when (or (nil? (:inputFile test)) test-data)] ; Skip only if input file specified but failed to load
                    (do
                      (print (str "  Running: " (:name test) "... "))
                      (flush)
@@ -157,9 +139,7 @@
 
 (defn save-results [results]
   "Save test results to JSON file"
-  (let [timestamp (.toString (Instant/now))
-        filename (str "../../results/clojure_test_results_"
-                     (str/replace timestamp #"[:.T-]" "_") ".json")]
+  (let [filename "../../results/clojure_test_results.json"]
     (try
       (spit filename (json/write-str results :indent true))
       (println (str "💾 Results saved to: " filename))
@@ -170,9 +150,8 @@
   "Run benchmarks and return results"
   (println "⚡ Running Clojure FHIRPath benchmarks...")
 
-  (let [test-config (load-test-config)
-        benchmark-tests (get test-config :benchmarkTests [])
-        test-data-files (get-in test-config [:testData :inputFiles] [])]
+  (let [test-cases (load-test-suites)
+        benchmark-tests (take 10 test-cases)] ; Use first 10 test cases for benchmarking
 
     (if (empty? benchmark-tests)
       (do
@@ -193,19 +172,14 @@
                                    :clojure_version (clojure-version)
                                    :fhirpath_version "fhirpath.clj"}}
 
-            ;; Load test data cache
-            test-data-cache (into {}
-                                  (for [input-file test-data-files
-                                        :let [test-data (load-test-data input-file)]
-                                        :when test-data]
-                                    [input-file test-data]))]
+            test-data-cache {}] ; We'll load test data on demand
 
         (println (str "📋 Running " (count benchmark-tests) " benchmark tests"))
 
         (let [benchmark-results
               (for [benchmark benchmark-tests
-                    :let [input-file (get benchmark :inputFile "patient-example.xml")
-                          test-data (get test-data-cache input-file)]]
+                    :let [input-file (get benchmark :inputFile "patient-example.json")
+                          test-data (load-test-data input-file)]]
                 (if (nil? test-data)
                   (do
                     (println (str "⚠️  Skipping benchmark " (:name benchmark) " - test data not available"))

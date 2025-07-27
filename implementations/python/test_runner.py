@@ -10,10 +10,8 @@ import os
 import sys
 import json
 import time
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-import xmltodict
 from fhirpathpy import evaluate
 
 # Custom JSON encoder to handle FHIRPath specific types
@@ -28,79 +26,58 @@ class FHIRPathEncoder(json.JSONEncoder):
 
 class PythonTestRunner:
     def __init__(self):
-        self.test_data_dir = Path(__file__).parent / "../../test-data"
-        self.test_cases_dir = Path(__file__).parent / "../../test-cases"
+        self.specs_dir = Path(__file__).parent / "../../specs"
         self.results_dir = Path(__file__).parent / "../../results"
 
         # Ensure results directory exists
         self.results_dir.mkdir(exist_ok=True)
 
-        # Load test configuration
-        config_path = self.test_cases_dir / "test-config.json"
-        with open(config_path, 'r') as f:
-            self.test_config = json.load(f)
+    def load_test_suites(self) -> List[Dict]:
+        """Load FHIRPath test cases from new JSON format."""
+        tests_dir = self.specs_dir / "fhirpath/tests"
+        tests = []
 
-    def load_official_tests(self) -> List[Dict]:
-        """Load official FHIRPath test cases from XML file."""
-        xml_path = self.test_cases_dir / "tests-fhir-r4.xml"
+        if not tests_dir.exists():
+            print(f"❌ Tests directory not found: {tests_dir}")
+            return []
 
         try:
-            tree = ET.parse(xml_path)
-            root = tree.getroot()
-            tests = []
-
-            # Extract tests from groups
-            for group in root.findall('group'):
-                group_name = group.get('name', 'unknown')
-
-                for test in group.findall('test'):
-                    test_name = test.get('name')
-                    test_description = test.get('description', test_name)
-                    input_file = test.get('inputfile', 'patient-example.xml')
-                    predicate = test.get('predicate') == 'true'
-                    mode = test.get('mode')
-                    invalid = test.get('invalid')
-
-                    expression_elem = test.find('expression')
-                    if expression_elem is None:
+            # Load all JSON test files
+            for json_file in tests_dir.glob("*.json"):
+                with open(json_file, 'r') as f:
+                    test_suite = json.load(f)
+                
+                suite_name = test_suite.get('name', json_file.stem)
+                
+                for test_case in test_suite.get('tests', []):
+                    # Skip disabled tests
+                    if test_case.get('disable', False):
                         continue
-
-                    expression = expression_elem.text
-                    if not expression:
-                        continue
-
-                    # Parse expected outputs
-                    expected_output = []
-                    for output in test.findall('output'):
-                        output_type = output.get('type', 'string')
-                        output_value = output.text
-                        if output_value is not None:
-                            expected_output.append({
-                                'type': output_type,
-                                'value': output_value
-                            })
-
+                    
+                    input_file = test_case.get('inputfile', 'patient-example.json')
+                    
                     tests.append({
-                        'name': test_name,
-                        'description': test_description,
+                        'name': test_case['name'],
+                        'description': test_case.get('description', test_case['name']),
                         'inputFile': input_file,
-                        'expression': expression,
-                        'expectedOutput': expected_output,
-                        'predicate': predicate,
-                        'mode': mode,
-                        'invalid': invalid,
-                        'group': group_name
+                        'expression': test_case['expression'],
+                        'expectedOutput': test_case.get('expected', []),
+                        'predicate': False,  # Not used in new format
+                        'mode': None,
+                        'invalid': test_case.get('error') is not None,
+                        'group': suite_name,
+                        'tags': test_case.get('tags', [])
                     })
 
             return tests
 
         except Exception as e:
-            print(f"❌ Error loading official tests: {e}")
+            print(f"❌ Error loading test suites: {e}")
             return []
 
     def load_test_data(self, filename: str) -> Optional[Dict]:
-        """Load test data from XML file and convert to dict."""
-        file_path = self.test_data_dir / filename
+        """Load test data from JSON file."""
+        file_path = self.specs_dir / "fhirpath/tests/input" / filename
 
         if not file_path.exists():
             print(f"⚠️  Test data file not found: {filename}")
@@ -108,10 +85,7 @@ class PythonTestRunner:
 
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                xml_content = f.read()
-
-            # Convert XML to dictionary for fhirpath-py
-            test_data = xmltodict.parse(xml_content)
+                test_data = json.load(f)
             return test_data
         except Exception as e:
             print(f"⚠️  Error loading test data {filename}: {e}")
@@ -194,21 +168,16 @@ class PythonTestRunner:
             }
         }
 
-        # Load test data files
-        test_data_cache = {}
-        for input_file in self.test_config['testData']['inputFiles']:
-            test_data = self.load_test_data(input_file)
-            if test_data:
-                test_data_cache[input_file] = test_data
+        # Load and run test suites
+        print('📋 Loading FHIRPath test suites...')
+        test_cases = self.load_test_suites()
+        print(f'📊 Found {len(test_cases)} test cases')
 
-        # Load and run official tests
-        print('📋 Loading official FHIRPath test suite...')
-        official_tests = self.load_official_tests()
-        print(f'📊 Found {len(official_tests)} official test cases')
-
-        for test_case in official_tests:
+        for test_case in test_cases:
             input_file = test_case['inputFile']
-            test_data = test_data_cache.get(input_file)
+            
+            # Load test data on demand
+            test_data = self.load_test_data(input_file) if input_file else None
 
             if not test_data:
                 print(f"⚠️  Skipping test {test_case['name']} - test data not available: {input_file}")
@@ -258,17 +227,26 @@ class PythonTestRunner:
             }
         }
 
-        # Load test data
-        test_data_cache = {}
-        for input_file in self.test_config['testData']['inputFiles']:
-            test_data = self.load_test_data(input_file)
-            if test_data:
-                test_data_cache[input_file] = test_data
+        # Create simple benchmarks from test cases
+        test_cases = self.load_test_suites()
+        benchmark_tests = []
+        
+        # Use a subset of test cases for benchmarking
+        for i, test_case in enumerate(test_cases[:10]):  # Limit to first 10 for benchmarking
+            benchmark_tests.append({
+                'name': f"benchmark_{test_case['name']}",
+                'description': f"Benchmark for {test_case['name']}",
+                'expression': test_case['expression'],
+                'inputFile': test_case['inputFile'],
+                'iterations': 100
+            })
 
         # Run benchmarks
-        for benchmark in self.test_config['benchmarkTests']:
-            input_file = benchmark.get('inputFile', 'patient-example.xml')
-            test_data = test_data_cache.get(input_file)
+        for benchmark in benchmark_tests:
+            input_file = benchmark.get('inputFile', 'patient-example.json')
+            
+            # Load test data on demand
+            test_data = self.load_test_data(input_file) if input_file else None
 
             if not test_data:
                 print(f"⚠️  Skipping benchmark {benchmark['name']} - test data not available")

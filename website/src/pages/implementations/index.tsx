@@ -22,8 +22,9 @@ import {
   IconRefresh,
   IconRocket,
   IconTools,
+  IconUser,
 } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface ImplementationCardProps {
   implementation: ImplementationInfo
@@ -62,11 +63,21 @@ function ImplementationCard({ implementation }: ImplementationCardProps) {
         {/* Header */}
         <Group justify="space-between">
           <Group>
-            <IconCode size={24} color="var(--mantine-color-blue-6)" />
+            {implementation.icon ? (
+              <img
+                src={implementation.icon}
+                alt={`${implementation.language} icon`}
+                style={{ width: 24, height: 24 }}
+              />
+            ) : (
+              <IconCode size={24} color="var(--mantine-color-blue-6)" />
+            )}
             <div>
               <Title order={3}>{implementation.name}</Title>
               <Text size="sm" c="dimmed">
-                v{implementation.version}
+                {implementation.library
+                  ? `${implementation.library} v${implementation.version}`
+                  : `v${implementation.version}`}
               </Text>
             </div>
           </Group>
@@ -85,6 +96,17 @@ function ImplementationCard({ implementation }: ImplementationCardProps) {
 
         {/* Description */}
         <Text size="sm">{implementation.description}</Text>
+
+        {/* Maintainer */}
+        <Group gap="xs">
+          <IconUser size={16} />
+          <Text size="sm" fw={500}>
+            Maintained by:
+          </Text>
+          <Badge variant="outline" color="blue" size="sm">
+            {implementation.maintainer}
+          </Badge>
+        </Group>
 
         {/* Technical Details */}
         <SimpleGrid cols={2} spacing="xs">
@@ -108,8 +130,8 @@ function ImplementationCard({ implementation }: ImplementationCardProps) {
             Key Features:
           </Text>
           <Group gap="xs">
-            {implementation.features.slice(0, 3).map((feature, index) => (
-              <Badge key={index} variant="outline" size="sm">
+            {implementation.features.slice(0, 3).map((feature) => (
+              <Badge key={feature} variant="outline" size="sm">
                 {feature}
               </Badge>
             ))}
@@ -150,8 +172,8 @@ function ImplementationCard({ implementation }: ImplementationCardProps) {
             Key Dependencies:
           </Text>
           <Group gap="xs">
-            {implementation.dependencies.slice(0, 2).map((dep, index) => (
-              <Badge key={index} variant="light" size="sm" color="gray">
+            {implementation.dependencies.slice(0, 2).map((dep) => (
+              <Badge key={dep} variant="light" size="sm" color="gray">
                 {dep}
               </Badge>
             ))}
@@ -190,7 +212,7 @@ function ImplementationCard({ implementation }: ImplementationCardProps) {
             </Tooltip>
           </Group>
           <Text size="xs" c="dimmed">
-            Updated: {implementation.lastUpdated}
+            Updated: {new Date(implementation.lastUpdated).toLocaleDateString()}
           </Text>
         </Group>
       </Stack>
@@ -203,7 +225,7 @@ export default function ImplementationsPage() {
   const [error, setError] = useState<string | null>(null)
   const [config, setConfig] = useState<ImplementationsConfig | null>(null)
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -215,7 +237,7 @@ export default function ImplementationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const handleRefresh = async () => {
     await loadData()
@@ -223,7 +245,7 @@ export default function ImplementationsPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   if (loading) {
     return (

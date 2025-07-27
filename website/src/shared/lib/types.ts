@@ -223,8 +223,10 @@ export interface ImplementationInfo {
   buildSystem: string
   runtime: string
   maintainer: string
+  library?: string
   repository: string
   documentation: string
+  icon?: string
   features: string[]
   dependencies: string[]
   status: 'active' | 'deprecated' | 'experimental'

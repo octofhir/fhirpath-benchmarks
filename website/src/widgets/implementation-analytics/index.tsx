@@ -92,7 +92,7 @@ export function ImplementationAnalytics({
       tests: Math.floor(5 + Math.random() * 15),
       passed: Math.floor(3 + Math.random() * 12),
     }))
-  }, [selectedImpl])
+  }, [])
 
   // Comparison with other implementations
   const comparisonData = useMemo(() => {
@@ -116,7 +116,7 @@ export function ImplementationAnalytics({
       avgTime: 50 + Math.random() * 100,
       complexity: Math.random() > 0.5 ? 'High' : Math.random() > 0.3 ? 'Medium' : 'Low',
     }))
-  }, [selectedImpl])
+  }, [])
 
   if (!currentImpl) {
     return <Text>No implementation selected</Text>

@@ -92,7 +92,6 @@ export function formatTooltipValue(
       const i = Math.floor(Math.log(value) / Math.log(1024))
       return `${(value / 1024 ** i).toFixed(precision)} ${sizes[i]}`
     }
-    case 'number':
     default:
       return Number(value).toLocaleString(undefined, {
         maximumFractionDigits: precision,

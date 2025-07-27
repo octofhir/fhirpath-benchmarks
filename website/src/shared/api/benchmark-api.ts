@@ -16,7 +16,7 @@ import type {
 // Cache for storing fetched data
 interface DataCache {
   [key: string]: {
-    data: any
+    data: unknown
     timestamp: number
     ttl: number
   }
@@ -98,7 +98,7 @@ export async function loadLatestComparisonReport(): Promise<ComparisonReport> {
     const data = await fetchJson<ComparisonReport>('test-results/latest/comparison_report.json')
     setCachedData(cacheKey, data)
     return data
-  } catch (error) {
+  } catch (_error) {
     // Fallback to mock data for development
     console.warn('Using mock data for comparison report')
     const mockData = createMockComparisonReport()
@@ -123,7 +123,7 @@ export async function loadTestResults(implementation: string): Promise<TestResul
     )
     setCachedData(cacheKey, data)
     return data
-  } catch (error) {
+  } catch (_error) {
     console.warn(`Using mock data for test results: ${implementation}`)
     const mockData = createMockTestResult(implementation)
     setCachedData(cacheKey, mockData, 1000)
@@ -147,7 +147,7 @@ export async function loadBenchmarkResults(implementation: string): Promise<Benc
     )
     setCachedData(cacheKey, data)
     return data
-  } catch (error) {
+  } catch (_error) {
     console.warn(`Using mock data for benchmark results: ${implementation}`)
     const mockData = createMockBenchmarkResult(implementation)
     setCachedData(cacheKey, mockData, 1000)
@@ -169,7 +169,7 @@ export async function loadImplementationsMetadata(): Promise<ImplementationMetad
     const data = await fetchJson<ImplementationMetadata[]>('test-results/implementations.json')
     setCachedData(cacheKey, data)
     return data
-  } catch (error) {
+  } catch (_error) {
     console.warn('Using mock data for implementations metadata')
     const mockData = createMockImplementationsMetadata()
     setCachedData(cacheKey, mockData, 1000)
@@ -191,7 +191,7 @@ export async function loadImplementations(): Promise<ImplementationsConfig> {
     const data = await fetchJson<ImplementationsConfig>('implementations.json')
     setCachedData(cacheKey, data)
     return data
-  } catch (error) {
+  } catch (_error) {
     console.warn('Using mock data for implementations config')
     const mockData = createMockImplementationsConfig()
     setCachedData(cacheKey, mockData, 1000)

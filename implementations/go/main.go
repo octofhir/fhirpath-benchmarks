@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -84,68 +83,17 @@ type TestCase struct {
 	Iterations     int           `json:"iterations"`
 }
 
-// TestConfig represents the test configuration
-type TestConfig struct {
-	SampleTests    []TestCase `json:"sampleTests"`
-	BenchmarkTests []TestCase `json:"benchmarkTests"`
-	TestData       struct {
-		InputFiles []string `json:"inputFiles"`
-	} `json:"testData"`
-}
-
-// XML structures for parsing official test cases
-type XMLTestOutput struct {
-	XMLName xml.Name `xml:"output"`
-	Type    string   `xml:"type,attr"`
-	Value   string   `xml:",chardata"`
-}
-
-type XMLTestExpression struct {
-	XMLName xml.Name `xml:"expression"`
-	Invalid string   `xml:"invalid,attr,omitempty"`
-	Value   string   `xml:",chardata"`
-}
-
-type XMLOfficialTest struct {
-	XMLName     xml.Name          `xml:"test"`
-	Name        string            `xml:"name,attr"`
-	Description string            `xml:"description,attr,omitempty"`
-	InputFile   string            `xml:"inputfile,attr"`
-	Predicate   string            `xml:"predicate,attr,omitempty"`
-	Mode        string            `xml:"mode,attr,omitempty"`
-	Expression  XMLTestExpression `xml:"expression"`
-	Outputs     []XMLTestOutput   `xml:"output"`
-}
-
-type XMLTestGroup struct {
-	XMLName     xml.Name          `xml:"group"`
-	Name        string            `xml:"name,attr"`
-	Description string            `xml:"description,attr,omitempty"`
-	Tests       []XMLOfficialTest `xml:"test"`
-}
-
-type XMLTestSuite struct {
-	XMLName     xml.Name       `xml:"tests"`
-	Name        string         `xml:"name,attr"`
-	Description string         `xml:"description,attr"`
-	Reference   string         `xml:"reference,attr"`
-	Groups      []XMLTestGroup `xml:"group"`
-}
-
 // GoTestRunner implements the test runner for Go
 type GoTestRunner struct {
-	testDataDir  string
-	testCasesDir string
-	resultsDir   string
-	testConfig   TestConfig
+	specsDir   string
+	resultsDir string
 }
 
 // NewGoTestRunner creates a new Go test runner
 func NewGoTestRunner() (*GoTestRunner, error) {
 	runner := &GoTestRunner{
-		testDataDir:  "../../test-data",
-		testCasesDir: "../../test-cases",
-		resultsDir:   "../../results",
+		specsDir:   "../../specs",
+		resultsDir: "../../results",
 	}
 
 	// Ensure results directory exists
@@ -153,193 +101,145 @@ func NewGoTestRunner() (*GoTestRunner, error) {
 		return nil, fmt.Errorf("failed to create results directory: %v", err)
 	}
 
-	// Load test configuration
-	configPath := filepath.Join(runner.testCasesDir, "test-config.json")
-	configData, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read test config: %v", err)
-	}
-
-	if err := json.Unmarshal(configData, &runner.testConfig); err != nil {
-		return nil, fmt.Errorf("failed to parse test config: %v", err)
-	}
-
 	return runner, nil
 }
 
-// loadOfficialTests loads official FHIRPath test cases from XML file
-func (r *GoTestRunner) loadOfficialTests() ([]TestCase, error) {
-	xmlPath := filepath.Join(r.testCasesDir, "tests-fhir-r4.xml")
-	xmlData, err := ioutil.ReadFile(xmlPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read official test cases: %v", err)
-	}
+// TestSuite represents a JSON test suite
+type TestSuite struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Source      string     `json:"source"`
+	Tests       []TestCase `json:"tests"`
+}
 
-	var testSuite XMLTestSuite
-	if err := xml.Unmarshal(xmlData, &testSuite); err != nil {
-		return nil, fmt.Errorf("failed to parse official test cases: %v", err)
+// TestCaseJSON represents a test case from JSON format
+type TestCaseJSON struct {
+	Name        string        `json:"name"`
+	Expression  string        `json:"expression"`
+	Input       interface{}   `json:"input"`
+	InputFile   string        `json:"inputfile"`
+	Expected    []interface{} `json:"expected"`
+	Tags        []string      `json:"tags"`
+	Description string        `json:"description"`
+	Disable     bool          `json:"disable"`
+	Error       string        `json:"error"`
+}
+
+// loadTestSuites loads FHIRPath test cases from new JSON format
+func (r *GoTestRunner) loadTestSuites() ([]TestCase, error) {
+	testsDir := filepath.Join(r.specsDir, "fhirpath", "tests")
+
+	if _, err := os.Stat(testsDir); os.IsNotExist(err) {
+		return nil, fmt.Errorf("tests directory not found: %s", testsDir)
 	}
 
 	var testCases []TestCase
 
-	// Extract tests from groups
-	for _, group := range testSuite.Groups {
-		for _, test := range group.Tests {
-			// Include all tests, including invalid ones (like Rust implementation)
+	err := filepath.Walk(testsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 
-			// Parse expected outputs
-			var expectedOutput []interface{}
-			for _, output := range test.Outputs {
-				// Convert output value based on type
-				var value interface{}
-				switch output.Type {
-				case "boolean":
-					if output.Value == "true" {
-						value = true
-					} else {
-						value = false
-					}
-				case "integer":
-					// In a real implementation, parse as int
-					value = output.Value
-				case "decimal":
-					// In a real implementation, parse as float
-					value = output.Value
-				default:
-					value = output.Value
-				}
-
-				expectedOutput = append(expectedOutput, map[string]interface{}{
-					"type":  output.Type,
-					"value": value,
-				})
+		if !info.IsDir() && filepath.Ext(path) == ".json" {
+			// Skip input directory
+			if info.Name() == "input" {
+				return nil
 			}
 
-			predicate := test.Predicate == "true"
+			data, err := ioutil.ReadFile(path)
+			if err != nil {
+				fmt.Printf("⚠️  Failed to read test file %s: %v\n", path, err)
+				return nil
+			}
 
-			testCases = append(testCases, TestCase{
-				Name:           test.Name,
-				Description:    test.Description,
-				InputFile:      test.InputFile,
-				Expression:     test.Expression.Value,
-				ExpectedOutput: expectedOutput,
-				Predicate:      predicate,
-				Mode:           test.Mode,
-				Invalid:        test.Expression.Invalid,
-				Group:          group.Name,
-			})
+			var testSuite TestSuite
+			if err := json.Unmarshal(data, &testSuite); err != nil {
+				fmt.Printf("⚠️  Failed to parse test file %s: %v\n", path, err)
+				return nil
+			}
+
+			suiteName := testSuite.Name
+			if suiteName == "" {
+				suiteName = filepath.Base(path)
+			}
+
+			for _, test := range testSuite.Tests {
+				// Skip disabled tests
+				if test.Disable {
+					continue
+				}
+
+				inputFile := test.InputFile
+				if inputFile == "" {
+					inputFile = "patient-example.json"
+				}
+
+				testCases = append(testCases, TestCase{
+					Name:           test.Name,
+					Description:    test.Description,
+					InputFile:      inputFile,
+					Expression:     test.Expression,
+					ExpectedOutput: test.Expected,
+					Predicate:      false, // Not used in new format
+					Mode:           "",
+					Invalid:        test.Error,
+					Group:          suiteName,
+				})
+			}
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to load test suites: %v", err)
 	}
 
 	return testCases, nil
 }
 
-// loadTestData loads test data from XML file and converts it to a FHIR resource
+// loadTestData loads test data from JSON file and converts it to a FHIR resource
 func (r *GoTestRunner) loadTestData(filename string) (fhirpath.Element, error) {
-	filePath := filepath.Join(r.testDataDir, filename)
-	_, err := ioutil.ReadFile(filePath)
+	filePath := filepath.Join(r.specsDir, "fhirpath", "tests", "input", filename)
+
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("test data file not found: %s", filename)
+	}
+
+	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read test data file: %v", err)
 	}
 
-	// Determine resource type from filename
-	resourceType := "Patient" // Default to Patient
-	if filename == "patient-example.xml" {
-		resourceType = "Patient"
-	} else if filename == "observation-example.xml" {
-		resourceType = "Observation"
+	// Parse JSON data directly - the library should handle FHIR JSON
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON data: %v", err)
 	}
 
-	// Parse XML to FHIR resource
+	resourceType, ok := jsonData["resourceType"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid resourceType in JSON data")
+	}
+
+	// Parse JSON to FHIR resource based on resource type
 	var resource fhirpath.Element
 
-	// For simplicity, we'll create a basic resource based on the filename
-	// In a real implementation, this would parse the XML properly
 	switch resourceType {
 	case "Patient":
 		patient := &r4.Patient{}
-		if err := json.Unmarshal([]byte(`{
-			"resourceType": "Patient",
-			"id": "example",
-			"birthDate": "1974-12-25",
-			"name": [
-				{
-					"use": "official",
-					"given": ["Peter", "James"],
-					"family": "Chalmers"
-				},
-				{
-					"use": "usual",
-					"given": ["Jim"]
-				},
-				{
-					"use": "maiden",
-					"given": ["Peter", "James"],
-					"family": "Windsor"
-				}
-			],
-			"telecom": [
-				{
-					"use": "home",
-					"system": "phone",
-					"value": "(03) 5555 6473",
-					"rank": 1
-				},
-				{
-					"use": "work",
-					"system": "phone",
-					"value": "(03) 3410 5613",
-					"rank": 2
-				},
-				{
-					"use": "mobile",
-					"system": "phone",
-					"value": "(03) 3410 5613",
-					"rank": 3
-				},
-				{
-					"use": "old",
-					"system": "phone",
-					"value": "(03) 5555 8834"
-				}
-			],
-			"active": true
-		}`), patient); err != nil {
+		if err := json.Unmarshal(data, patient); err != nil {
 			return nil, fmt.Errorf("failed to parse patient data: %v", err)
 		}
 		resource = patient
 	case "Observation":
 		observation := &r4.Observation{}
-		if err := json.Unmarshal([]byte(`{
-			"resourceType": "Observation",
-			"id": "example",
-			"status": "final",
-			"code": {
-				"coding": [
-					{
-						"system": "http://loinc.org",
-						"code": "29463-7",
-						"display": "Body Weight"
-					},
-					{
-						"system": "http://snomed.info/sct",
-						"code": "27113001",
-						"display": "Body weight"
-					}
-				]
-			},
-			"valueQuantity": {
-				"value": 185,
-				"unit": "lbs",
-				"system": "http://unitsofmeasure.org",
-				"code": "[lb_av]"
-			}
-		}`), observation); err != nil {
+		if err := json.Unmarshal(data, observation); err != nil {
 			return nil, fmt.Errorf("failed to parse observation data: %v", err)
 		}
 		resource = observation
 	default:
-		// For other files, return a basic structure
+		// For other resource types, try a generic approach
 		return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
 	}
 
@@ -474,31 +374,21 @@ func (r *GoTestRunner) runTests() error {
 	var allResults []TestResult
 	summary := TestSummary{}
 
-	// Load test data files
-	testDataCache := make(map[string]fhirpath.Element)
-	for _, inputFile := range r.testConfig.TestData.InputFiles {
+	// Load and run test suites
+	fmt.Println("📋 Loading FHIRPath test suites...")
+	testCases, err := r.loadTestSuites()
+	if err != nil {
+		return fmt.Errorf("failed to load test suites: %v", err)
+	}
+	fmt.Printf("📊 Found %d test cases\n", len(testCases))
+
+	for _, testCase := range testCases {
+		inputFile := testCase.InputFile
+
+		// Load test data on demand
 		testData, err := r.loadTestData(inputFile)
 		if err != nil {
-			fmt.Printf("⚠️  Warning: Could not load test data: %v\n", err)
-			continue
-		}
-		testDataCache[inputFile] = testData
-	}
-
-	// Load and run official tests
-	fmt.Println("📋 Loading official FHIRPath test suite...")
-	officialTests, err := r.loadOfficialTests()
-	if err != nil {
-		return fmt.Errorf("failed to load official tests: %v", err)
-	}
-	fmt.Printf("📊 Found %d official test cases\n", len(officialTests))
-
-	for _, testCase := range officialTests {
-		inputFile := testCase.InputFile
-		testData := testDataCache[inputFile]
-
-		if testData == nil {
-			fmt.Printf("⚠️  Skipping test %s - test data not available: %s\n", testCase.Name, inputFile)
+			fmt.Printf("⚠️  Skipping test %s - test data not available: %s (%v)\n", testCase.Name, inputFile, err)
 			continue
 		}
 
@@ -566,17 +456,28 @@ func (r *GoTestRunner) runBenchmarks() error {
 
 	var benchmarks []BenchmarkResult
 
-	// Load test data
-	testData, err := r.loadTestData("patient-example.xml")
+	// Create simple benchmarks from test cases
+	testCases, err := r.loadTestSuites()
 	if err != nil {
-		fmt.Printf("Warning: Could not load test data: %v\n", err)
-		return fmt.Errorf("failed to load test data: %v", err)
+		return fmt.Errorf("failed to load test suites: %v", err)
 	}
 
-	// Use benchmark cases from test-config.json
-	benchmarkCases := r.testConfig.BenchmarkTests
+	// Use a subset for benchmarking
+	var benchmarkCases []TestCase
+	for i := 0; i < 10 && i < len(testCases); i++ {
+		testCase := testCases[i]
+		testCase.Iterations = 100 // Set benchmark iterations
+		benchmarkCases = append(benchmarkCases, testCase)
+	}
 
 	for _, testCase := range benchmarkCases {
+		// Load test data on demand
+		testData, err := r.loadTestData(testCase.InputFile)
+		if err != nil {
+			fmt.Printf("⚠️  Skipping benchmark %s - test data not available: %v\n", testCase.Name, err)
+			continue
+		}
+
 		iterations := 1000
 		if testCase.Iterations > 0 {
 			iterations = testCase.Iterations

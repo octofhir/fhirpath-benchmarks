@@ -34,7 +34,7 @@ import {
   IconRefresh,
   IconX,
 } from '@tabler/icons-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 export default function BenchmarkDetailPage() {
@@ -46,7 +46,7 @@ export default function BenchmarkDetailPage() {
   const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult | null>(null)
   const [activeTab, setActiveTab] = useState<string>('overview')
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!implementation) return
 
     setLoading(true)
@@ -65,7 +65,7 @@ export default function BenchmarkDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [implementation])
 
   const handleRefresh = async () => {
     clearCache()
@@ -76,7 +76,7 @@ export default function BenchmarkDetailPage() {
     if (implementation) {
       loadData()
     }
-  }, [implementation])
+  }, [implementation, loadData])
 
   if (!implementation) {
     return (
@@ -109,7 +109,9 @@ export default function BenchmarkDetailPage() {
     )
   }
 
-  const passRate = testResults ? (testResults.summary.passed / testResults.summary.total) * 100 : 0
+  const passRate = testResults?.summary
+    ? (testResults.summary.passed / testResults.summary.total) * 100
+    : 0
 
   // Mock performance trend data
   const performanceTrend = Array.from({ length: 30 }, (_, i) => ({
@@ -162,7 +164,7 @@ export default function BenchmarkDetailPage() {
                 </Badge>
               </Group>
               <Text size="xl" fw={700}>
-                {testResults.summary.passed}/{testResults.summary.total}
+                {testResults.summary?.passed || 0}/{testResults.summary?.total || 0}
               </Text>
               <Progress value={passRate} color="green" size="sm" />
               <Text size="sm" c="dimmed">
@@ -181,7 +183,9 @@ export default function BenchmarkDetailPage() {
               </Group>
               <Text size="xl" fw={700}>
                 {formatExecutionTime(
-                  testResults.summary.execution_time_ms / testResults.summary.total,
+                  testResults.summary?.execution_time_ms && testResults.summary?.total
+                    ? testResults.summary.execution_time_ms / testResults.summary.total
+                    : 0,
                 )}
               </Text>
               <Text size="sm" c="dimmed">
@@ -218,7 +222,7 @@ export default function BenchmarkDetailPage() {
                 </Badge>
               </Group>
               <Text size="xl" fw={700}>
-                {testResults.summary.errors}
+                {testResults.summary?.errors || 0}
               </Text>
               <Text size="sm" c="dimmed">
                 Error Count
@@ -288,7 +292,7 @@ export default function BenchmarkDetailPage() {
               <Card.Section withBorder inheritPadding py="md">
                 <Group justify="space-between">
                   <Title order={4}>Test Results</Title>
-                  <Badge variant="light">{testResults.tests.length} tests</Badge>
+                  <Badge variant="light">{testResults.tests?.length || 0} tests</Badge>
                 </Group>
               </Card.Section>
 
@@ -305,8 +309,8 @@ export default function BenchmarkDetailPage() {
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {testResults.tests.slice(0, 20).map((test, index) => (
-                        <Table.Tr key={index}>
+                      {testResults.tests?.slice(0, 20).map((test, index) => (
+                        <Table.Tr key={`${test.name}-${index}`}>
                           <Table.Td>
                             {test.passed ? (
                               <IconCheck size={16} color="green" />
@@ -316,21 +320,25 @@ export default function BenchmarkDetailPage() {
                           </Table.Td>
                           <Table.Td>
                             <Text size="sm" fw={500}>
-                              {test.name}
+                              {test.name || 'Unknown test'}
                             </Text>
                           </Table.Td>
                           <Table.Td>
                             <Text size="sm" c="dimmed">
-                              {test.file}
+                              {test.file || 'No file'}
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Text size="sm">{formatExecutionTime(test.execution_time_ms)}</Text>
+                            <Text size="sm">
+                              {formatExecutionTime(test.execution_time_ms || 0)}
+                            </Text>
                           </Table.Td>
                           <Table.Td>
                             {test.error ? (
                               <Text size="xs" c="red" truncate="end">
-                                {test.error}
+                                {typeof test.error === 'string'
+                                  ? test.error
+                                  : JSON.stringify(test.error)}
                               </Text>
                             ) : (
                               <Text size="xs" c="dimmed">
@@ -339,7 +347,7 @@ export default function BenchmarkDetailPage() {
                             )}
                           </Table.Td>
                         </Table.Tr>
-                      ))}
+                      )) || []}
                     </Table.Tbody>
                   </Table>
                 </Table.ScrollContainer>
@@ -349,7 +357,7 @@ export default function BenchmarkDetailPage() {
         </Tabs.Panel>
 
         <Tabs.Panel value="performance">
-          {benchmarkResults && (
+          {benchmarkResults?.summary ? (
             <Card withBorder>
               <Card.Section withBorder inheritPadding py="md">
                 <Title order={4}>Benchmark Performance</Title>
@@ -359,26 +367,32 @@ export default function BenchmarkDetailPage() {
                 <Stack gap="md">
                   <Group justify="space-between">
                     <Text>Total Cases:</Text>
-                    <Text fw={500}>{benchmarkResults.summary.total_cases}</Text>
+                    <Text fw={500}>{benchmarkResults.summary.total_cases || 0}</Text>
                   </Group>
                   <Group justify="space-between">
                     <Text>Total Iterations:</Text>
-                    <Text fw={500}>{benchmarkResults.summary.total_iterations}</Text>
+                    <Text fw={500}>{benchmarkResults.summary.total_iterations || 0}</Text>
                   </Group>
                   <Group justify="space-between">
                     <Text>Average Time per Case:</Text>
                     <Text fw={500}>
-                      {formatExecutionTime(benchmarkResults.summary.avg_time_per_case_ms)}
+                      {formatExecutionTime(benchmarkResults.summary.avg_time_per_case_ms || 0)}
                     </Text>
                   </Group>
                   <Group justify="space-between">
                     <Text>Total Execution Time:</Text>
                     <Text fw={500}>
-                      {formatExecutionTime(benchmarkResults.summary.total_time_ms)}
+                      {formatExecutionTime(benchmarkResults.summary.total_time_ms || 0)}
                     </Text>
                   </Group>
                 </Stack>
               </Card.Section>
+            </Card>
+          ) : (
+            <Card withBorder>
+              <Stack align="center" py="xl">
+                <Text c="dimmed">No benchmark data available</Text>
+              </Stack>
             </Card>
           )}
         </Tabs.Panel>

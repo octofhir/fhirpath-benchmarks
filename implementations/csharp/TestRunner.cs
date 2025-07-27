@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Xml;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
@@ -22,92 +21,89 @@ namespace FhirPathComparison
     /// </summary>
     public class TestRunner
     {
-        private readonly string _testDataDir;
-        private readonly string _testCasesDir;
+        private readonly string _specsDir;
         private readonly string _resultsDir;
-        private readonly FhirXmlParser _xmlParser;
+        private readonly FhirJsonParser _jsonParser;
         private readonly FhirPathCompiler _fhirPathCompiler;
-        private JsonNode _testConfig;
 
         public TestRunner()
         {
             // Initialize paths
             var currentDir = Directory.GetCurrentDirectory();
-            _testDataDir = Path.Combine(currentDir, "..", "..", "test-data");
-            _testCasesDir = Path.Combine(currentDir, "..", "..", "test-cases");
+            _specsDir = Path.Combine(currentDir, "..", "..", "specs");
             _resultsDir = Path.Combine(currentDir, "..", "..", "results");
 
             // Ensure results directory exists
             Directory.CreateDirectory(_resultsDir);
 
             // Initialize FHIR parsers and compiler
-            _xmlParser = new FhirXmlParser();
+            _jsonParser = new FhirJsonParser();
             _fhirPathCompiler = new FhirPathCompiler();
-
-            // Load test configuration
-            var configPath = Path.Combine(_testCasesDir, "test-config.json");
-            var configJson = File.ReadAllText(configPath);
-            _testConfig = JsonNode.Parse(configJson);
         }
 
         /// <summary>
-        /// Load official FHIRPath test cases from XML file.
+        /// Load FHIRPath test cases from new JSON format.
         /// </summary>
-        private List<JsonObject> LoadOfficialTests()
+        private List<JsonObject> LoadTestSuites()
         {
             var tests = new List<JsonObject>();
-            var xmlPath = Path.Combine(_testCasesDir, "tests-fhir-r4.xml");
+            var testsDir = Path.Combine(_specsDir, "fhirpath", "tests");
+
+            if (!Directory.Exists(testsDir))
+            {
+                Console.WriteLine($"❌ Tests directory not found: {testsDir}");
+                return tests;
+            }
 
             try
             {
-                var doc = new XmlDocument();
-                doc.Load(xmlPath);
-
-                var groups = doc.SelectNodes("//group");
-                foreach (XmlNode group in groups)
+                var jsonFiles = Directory.GetFiles(testsDir, "*.json");
+                
+                foreach (var jsonFile in jsonFiles)
                 {
-                    var groupName = group.Attributes?["name"]?.Value ?? "unknown";
-
-                    var testNodes = group.SelectNodes("test");
-                    foreach (XmlNode test in testNodes)
+                    var testSuite = JsonNode.Parse(File.ReadAllText(jsonFile));
+                    var suiteName = testSuite["name"]?.ToString() ?? Path.GetFileNameWithoutExtension(jsonFile);
+                    
+                    var testCases = testSuite["tests"]?.AsArray();
+                    if (testCases == null) continue;
+                    
+                    foreach (var testCase in testCases)
                     {
-                        var testName = test.Attributes?["name"]?.Value;
-                        var description = test.Attributes?["description"]?.Value ?? testName;
-                        var inputFile = test.Attributes?["inputfile"]?.Value ?? "patient-example.xml";
-                        var invalid = test.Attributes?["invalid"]?.Value;
-
-                        var expressionNode = test.SelectSingleNode("expression");
-                        if (expressionNode?.InnerText == null || string.IsNullOrWhiteSpace(expressionNode.InnerText))
+                        // Skip disabled tests
+                        if (testCase["disable"]?.GetValue<bool>() == true)
                             continue;
-
-                        var testCase = new JsonObject
+                        
+                        var inputFile = testCase["inputfile"]?.ToString() ?? "patient-example.json";
+                        
+                        var test = new JsonObject
                         {
-                            ["name"] = testName,
-                            ["description"] = description,
+                            ["name"] = testCase["name"]?.ToString(),
+                            ["description"] = testCase["description"]?.ToString() ?? testCase["name"]?.ToString(),
                             ["inputFile"] = inputFile,
-                            ["expression"] = expressionNode.InnerText,
-                            ["group"] = groupName,
-                            ["invalid"] = !string.IsNullOrEmpty(invalid)
+                            ["expression"] = testCase["expression"]?.ToString(),
+                            ["group"] = suiteName,
+                            ["invalid"] = testCase["error"] != null,
+                            ["expectedOutput"] = testCase["expected"]
                         };
 
-                        tests.Add(testCase);
+                        tests.Add(test);
                     }
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine($"❌ Error loading official tests: {e.Message}");
+                Console.WriteLine($"❌ Error loading test suites: {e.Message}");
             }
 
             return tests;
         }
 
         /// <summary>
-        /// Load test data from XML file.
+        /// Load test data from JSON file.
         /// </summary>
         private Resource LoadTestData(string filename)
         {
-            var filePath = Path.Combine(_testDataDir, filename);
+            var filePath = Path.Combine(_specsDir, "fhirpath", "tests", "input", filename);
 
             if (!File.Exists(filePath))
             {
@@ -117,8 +113,9 @@ namespace FhirPathComparison
 
             try
             {
-                var xmlContent = File.ReadAllText(filePath);
-                var resource = _xmlParser.Parse<Resource>(xmlContent);
+                var jsonContent = File.ReadAllText(filePath);
+                var parser = _jsonParser;
+                var resource = parser.Parse<Resource>(jsonContent);
                 return resource;
             }
             catch (Exception e)
@@ -227,29 +224,19 @@ namespace FhirPathComparison
             var testsArray = results["tests"].AsArray();
             var summary = results["summary"].AsObject();
 
-            // Load test data files
-            var testDataCache = new Dictionary<string, Resource>();
-            var inputFiles = _testConfig["testData"]["inputFiles"].AsArray();
+            // Load and run test suites
+            Console.WriteLine("📋 Loading FHIRPath test suites...");
+            var testCases = LoadTestSuites();
+            Console.WriteLine($"📊 Found {testCases.Count} test cases");
 
-            foreach (var inputFile in inputFiles)
-            {
-                var filename = inputFile.ToString();
-                var testData = LoadTestData(filename);
-                if (testData != null)
-                {
-                    testDataCache[filename] = testData;
-                }
-            }
-
-            // Load and run official tests
-            Console.WriteLine("📋 Loading official FHIRPath test suite...");
-            var officialTests = LoadOfficialTests();
-            Console.WriteLine($"📊 Found {officialTests.Count} official test cases");
-
-            foreach (var testCase in officialTests)
+            foreach (var testCase in testCases)
             {
                 var inputFile = testCase["inputFile"].ToString();
-                if (!testDataCache.ContainsKey(inputFile))
+                
+                // Load test data on demand
+                var testData = !string.IsNullOrEmpty(inputFile) ? LoadTestData(inputFile) : null;
+                
+                if (testData == null)
                 {
                     Console.WriteLine($"⚠️  Skipping test {testCase["name"]} - test data not available: {inputFile}");
                     continue;
@@ -262,7 +249,6 @@ namespace FhirPathComparison
                     continue;
                 }
 
-                var testData = testDataCache[inputFile];
                 var testResult = RunSingleTest(testCase, testData);
                 testsArray.Add(testResult);
 
@@ -323,32 +309,38 @@ namespace FhirPathComparison
 
             var benchmarksArray = results["benchmarks"].AsArray();
 
-            // Load test data
-            var testDataCache = new Dictionary<string, Resource>();
-            var inputFiles = _testConfig["testData"]["inputFiles"].AsArray();
-
-            foreach (var inputFile in inputFiles)
+            // Create simple benchmarks from test cases
+            var testCases = LoadTestSuites();
+            var benchmarkTests = new List<JsonObject>();
+            
+            // Use a subset of test cases for benchmarking
+            for (int i = 0; i < Math.Min(10, testCases.Count); i++)
             {
-                var filename = inputFile.ToString();
-                var testData = LoadTestData(filename);
-                if (testData != null)
+                var testCase = testCases[i];
+                var benchmarkTest = new JsonObject
                 {
-                    testDataCache[filename] = testData;
-                }
+                    ["name"] = $"benchmark_{testCase["name"]}",
+                    ["description"] = $"Benchmark for {testCase["name"]}",
+                    ["expression"] = testCase["expression"],
+                    ["inputFile"] = testCase["inputFile"],
+                    ["iterations"] = 100
+                };
+                benchmarkTests.Add(benchmarkTest);
             }
 
             // Run benchmarks
-            var benchmarkTests = _testConfig["benchmarkTests"].AsArray();
             foreach (var benchmark in benchmarkTests)
             {
-                var inputFile = benchmark["inputFile"]?.ToString() ?? "patient-example.xml";
-                if (!testDataCache.ContainsKey(inputFile))
+                var inputFile = benchmark["inputFile"]?.ToString() ?? "patient-example.json";
+                
+                // Load test data on demand
+                var testData = !string.IsNullOrEmpty(inputFile) ? LoadTestData(inputFile) : null;
+                
+                if (testData == null)
                 {
                     Console.WriteLine($"⚠️  Skipping benchmark {benchmark["name"]} - test data not available");
                     continue;
                 }
-
-                var testData = testDataCache[inputFile];
                 Console.WriteLine($"  🏃 Running {benchmark["name"]}...");
 
                 var expression = benchmark["expression"].ToString();

@@ -19,12 +19,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * Java FHIRPath Test Runner
@@ -34,20 +28,17 @@ import org.w3c.dom.NodeList;
  */
 public class TestRunner {
 
-    private final Path testDataDir;
-    private final Path testCasesDir;
+    private final Path specsDir;
     private final Path resultsDir;
     private final FhirContext fhirContext;
     private final IFhirPath fhirPath;
-    private final IParser xmlParser;
+    private final IParser jsonParser;
     private final ObjectMapper objectMapper;
-    private JsonNode testConfig;
 
     public TestRunner() throws IOException {
         // Initialize paths
         Path currentDir = Paths.get("").toAbsolutePath();
-        this.testDataDir = currentDir.resolve("../../test-data");
-        this.testCasesDir = currentDir.resolve("../../test-cases");
+        this.specsDir = currentDir.resolve("../../specs");
         this.resultsDir = currentDir.resolve("../../results");
 
         // Ensure results directory exists
@@ -56,71 +47,74 @@ public class TestRunner {
         // Initialize FHIR context and parsers
         this.fhirContext = FhirContext.forR4();
         this.fhirPath = fhirContext.newFhirPath();
-        this.xmlParser = fhirContext.newXmlParser();
+        this.jsonParser = fhirContext.newJsonParser();
         this.objectMapper = new ObjectMapper();
-
-        // Load test configuration
-        Path configPath = testCasesDir.resolve("test-config.json");
-        this.testConfig = objectMapper.readTree(configPath.toFile());
     }
 
     /**
-     * Load official FHIRPath test cases from XML file.
+     * Load FHIRPath test cases from new JSON format.
      */
-    private List<ObjectNode> loadOfficialTests() {
+    private List<ObjectNode> loadTestSuites() {
         List<ObjectNode> tests = new ArrayList<>();
-        Path xmlPath = testCasesDir.resolve("tests-fhir-r4.xml");
+        Path testsDir = specsDir.resolve("fhirpath/tests");
+
+        if (!Files.exists(testsDir)) {
+            System.err.println("❌ Tests directory not found: " + testsDir);
+            return tests;
+        }
 
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(xmlPath.toFile());
+            Files.list(testsDir)
+                .filter(path -> path.toString().endsWith(".json"))
+                .forEach(jsonFile -> {
+                    try {
+                        JsonNode testSuite = objectMapper.readTree(jsonFile.toFile());
+                        String suiteName = testSuite.has("name") ?
+                            testSuite.get("name").asText() :
+                            jsonFile.getFileName().toString().replace(".json", "");
 
-            NodeList groups = doc.getElementsByTagName("group");
-            for (int i = 0; i < groups.getLength(); i++) {
-                Element group = (Element) groups.item(i);
-                String groupName = group.getAttribute("name");
+                        JsonNode testCases = testSuite.get("tests");
+                        if (testCases != null && testCases.isArray()) {
+                            for (JsonNode testCase : testCases) {
+                                // Skip disabled tests
+                                if (testCase.has("disable") && testCase.get("disable").asBoolean()) {
+                                    continue;
+                                }
 
-                NodeList testNodes = group.getElementsByTagName("test");
-                for (int j = 0; j < testNodes.getLength(); j++) {
-                    Element test = (Element) testNodes.item(j);
+                                String inputFile = testCase.has("inputfile") ?
+                                    testCase.get("inputfile").asText() : "patient-example.json";
 
-                    String testName = test.getAttribute("name");
-                    String description = test.getAttribute("description");
-                    String inputFile = test.getAttribute("inputfile");
-                    String invalid = test.getAttribute("invalid");
+                                ObjectNode test = objectMapper.createObjectNode();
+                                test.put("name", testCase.get("name").asText());
+                                test.put("description", testCase.has("description") ?
+                                    testCase.get("description").asText() : testCase.get("name").asText());
+                                test.put("inputFile", inputFile);
+                                test.put("expression", testCase.get("expression").asText());
+                                test.put("group", suiteName);
+                                test.put("invalid", testCase.has("error"));
+                                if (testCase.has("expected")) {
+                                    test.set("expectedOutput", testCase.get("expected"));
+                                }
 
-                    if (inputFile.isEmpty()) inputFile = "patient-example.xml";
-
-                    NodeList expressions = test.getElementsByTagName("expression");
-                    if (expressions.getLength() == 0) continue;
-
-                    String expression = expressions.item(0).getTextContent();
-                    if (expression == null || expression.trim().isEmpty()) continue;
-
-                    ObjectNode testCase = objectMapper.createObjectNode();
-                    testCase.put("name", testName);
-                    testCase.put("description", description.isEmpty() ? testName : description);
-                    testCase.put("inputFile", inputFile);
-                    testCase.put("expression", expression);
-                    testCase.put("group", groupName);
-                    testCase.put("invalid", !invalid.isEmpty());
-
-                    tests.add(testCase);
-                }
-            }
+                                tests.add(test);
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.err.println("⚠️  Failed to load test file " + jsonFile + ": " + e.getMessage());
+                    }
+                });
         } catch (Exception e) {
-            System.err.println("❌ Error loading official tests: " + e.getMessage());
+            System.err.println("❌ Error loading test suites: " + e.getMessage());
         }
 
         return tests;
     }
 
     /**
-     * Load test data from XML file.
+     * Load test data from JSON file.
      */
     private Optional<IBase> loadTestData(String filename) {
-        Path filePath = testDataDir.resolve(filename);
+        Path filePath = specsDir.resolve("fhirpath/tests/input").resolve(filename);
 
         if (!Files.exists(filePath)) {
             System.out.println("⚠️  Test data file not found: " + filename);
@@ -128,8 +122,8 @@ public class TestRunner {
         }
 
         try {
-            String xmlContent = Files.readString(filePath);
-            IBase resource = xmlParser.parseResource(xmlContent);
+            String jsonContent = Files.readString(filePath);
+            IBase resource = jsonParser.parseResource(jsonContent);
             return Optional.of(resource);
         } catch (Exception e) {
             System.out.println("⚠️  Error loading test data " + filename + ": " + e.getMessage());
@@ -223,30 +217,17 @@ public class TestRunner {
         summary.put("errors", 0);
         results.set("summary", summary);
 
-        // Load test data files
-        JsonNode inputFiles = testConfig.get("testData").get("inputFiles");
-        List<IBase> testDataCache = new ArrayList<>();
-        List<String> fileNames = new ArrayList<>();
+        // Load and run test suites
+        System.out.println("📋 Loading FHIRPath test suites...");
+        List<ObjectNode> testCases = loadTestSuites();
+        System.out.println("📊 Found " + testCases.size() + " test cases");
 
-        for (JsonNode inputFile : inputFiles) {
-            String filename = inputFile.asText();
-            Optional<IBase> testData = loadTestData(filename);
-            if (testData.isPresent()) {
-                testDataCache.add(testData.get());
-                fileNames.add(filename);
-            }
-        }
-
-        // Load and run official tests
-        System.out.println("📋 Loading official FHIRPath test suite...");
-        List<ObjectNode> officialTests = loadOfficialTests();
-        System.out.println("📊 Found " + officialTests.size() + " official test cases");
-
-        for (ObjectNode testCase : officialTests) {
+        for (ObjectNode testCase : testCases) {
             String inputFile = testCase.get("inputFile").asText();
-            int dataIndex = fileNames.indexOf(inputFile);
 
-            if (dataIndex == -1) {
+            // Load test data on demand
+            Optional<IBase> testDataOpt = loadTestData(inputFile);
+            if (!testDataOpt.isPresent()) {
                 System.out.println("⚠️  Skipping test " + testCase.get("name").asText() + " - test data not available: " + inputFile);
                 continue;
             }
@@ -257,7 +238,7 @@ public class TestRunner {
                 continue;
             }
 
-            IBase testData = testDataCache.get(dataIndex);
+            IBase testData = testDataOpt.get();
             ObjectNode testResult = runSingleTest(testCase, testData);
             testsArray.add(testResult);
 
@@ -310,33 +291,35 @@ public class TestRunner {
         systemInfo.put("hapi_fhir_version", "6.8.0"); // Would need to get actual version
         results.set("system_info", systemInfo);
 
-        // Load test data
-        JsonNode inputFiles = testConfig.get("testData").get("inputFiles");
-        List<IBase> testDataCache = new ArrayList<>();
-        List<String> fileNames = new ArrayList<>();
+        // Create simple benchmarks from test cases
+        List<ObjectNode> testCases = loadTestSuites();
+        List<ObjectNode> benchmarkTests = new ArrayList<>();
 
-        for (JsonNode inputFile : inputFiles) {
-            String filename = inputFile.asText();
-            Optional<IBase> testData = loadTestData(filename);
-            if (testData.isPresent()) {
-                testDataCache.add(testData.get());
-                fileNames.add(filename);
-            }
+        // Use a subset of test cases for benchmarking
+        for (int i = 0; i < Math.min(10, testCases.size()); i++) {
+            ObjectNode testCase = testCases.get(i);
+            ObjectNode benchmark = objectMapper.createObjectNode();
+            benchmark.put("name", "benchmark_" + testCase.get("name").asText());
+            benchmark.put("description", "Benchmark for " + testCase.get("name").asText());
+            benchmark.put("expression", testCase.get("expression").asText());
+            benchmark.put("inputFile", testCase.get("inputFile").asText());
+            benchmark.put("iterations", 100);
+            benchmarkTests.add(benchmark);
         }
 
         // Run benchmarks
-        JsonNode benchmarkTests = testConfig.get("benchmarkTests");
-        for (JsonNode benchmark : benchmarkTests) {
+        for (ObjectNode benchmark : benchmarkTests) {
             String inputFile = benchmark.has("inputFile") ?
-                benchmark.get("inputFile").asText() : "patient-example.xml";
-            int dataIndex = fileNames.indexOf(inputFile);
+                benchmark.get("inputFile").asText() : "patient-example.json";
 
-            if (dataIndex == -1) {
+            // Load test data on demand
+            Optional<IBase> testDataOpt = loadTestData(inputFile);
+            if (!testDataOpt.isPresent()) {
                 System.out.println("⚠️  Skipping benchmark " + benchmark.get("name").asText() + " - test data not available");
                 continue;
             }
 
-            IBase testData = testDataCache.get(dataIndex);
+            IBase testData = testDataOpt.get();
             System.out.println("  🏃 Running " + benchmark.get("name").asText() + "...");
 
             String expression = benchmark.get("expression").asText();

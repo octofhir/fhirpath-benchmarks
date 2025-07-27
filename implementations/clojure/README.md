@@ -64,8 +64,7 @@ python3 scripts/run-comparison.py --languages clojure --benchmark
 The implementation uses the following key dependencies:
 
 - **fhirpath.clj** - The main FHIRPath library by HealthSamurai
-- **org.clojure/data.json** - JSON processing for test data and results
-- **org.clojure/data.xml** - XML processing for test cases
+- **org.clojure/data.json** - JSON processing for test data and test cases
 - **clj-commons/clj-yaml** - YAML processing support
 
 ## Library Information
@@ -138,7 +137,7 @@ Test results are saved in JSON format to `../../results/clojure_test_results_<ti
 
 4. **Test data not found**
    - Ensure you're running from the correct directory
-   - Test data should be in `../../test-data/`
+   - Test data should be in `../../specs/fhirpath/tests/input/`
 
 ### Getting Help
 

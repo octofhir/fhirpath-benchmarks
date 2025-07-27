@@ -152,7 +152,7 @@ export function groupTestCasesByCategory(testResults: TestResult[]): Record<
       }
       return acc
     },
-    {} as Record<string, any>,
+    {} as Record<string, unknown>,
   )
 }
 
@@ -211,7 +211,9 @@ export function calculateTrendData(
       }
     })
     .filter(Boolean)
-    .sort((a, b) => new Date(a!.timestamp).getTime() - new Date(b!.timestamp).getTime()) as Array<{
+    .sort(
+      (a, b) => new Date(a?.timestamp || 0).getTime() - new Date(b?.timestamp || 0).getTime(),
+    ) as Array<{
     timestamp: string
     pass_rate: number
     avg_execution_time: number
